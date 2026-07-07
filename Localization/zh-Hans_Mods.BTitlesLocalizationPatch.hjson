@@ -6,6 +6,7 @@ Logs: {
 	DetectionEx: 检测 [{0}] 模组的 [{1}] 群系时出错: {2}
 	DictNull: 未获取到群系字典，自动发现功能已禁用
 	DictStats: 群系字典共 {0} 项，检测函数共 {1} 个
+	HookApplied: GetActualTitleName Detour 补丁已成功应用
 	HookGetTitleNameFailed: 未找到 BiomeTitlesUI.GetActualTitleName 方法，Hook 注册失败
 	IconLoadFailed: 加载群系 [{0}] 的图标时失败: {1}
 	LoadReentry: 模组加载被重复调用，已跳过
@@ -30,17 +31,23 @@ Configs: {
 
 		EnableScan: {
 			Label: 扫描新群系
-			Tooltip: 扫描各模组中未被原模组收录的模组群系（ModBiome）并添加到检测列表（需要重载一次来扫描新的群系）
+			Tooltip:
+				'''
+				扫描各模组中未被原模组收录的模组群系（ModBiome）并添加到检测列表
+
+				开 → 需要重载才会执行扫描
+				关 → 不需要重载，但已注册的群系仍会继续显示
+				'''
 		}
 
 		EnableAutoStyling: {
 			Label: 配色
-			Tooltip: 为新增的群系分配标题颜色和图标（需要重载一次来配图标和颜色）
+			Tooltip: 为新增的群系分配标题颜色
 		}
 
 		EnableDebugLog: {
 			Label: 调试日志
-			Tooltip: 输出群系到 client.log
+			Tooltip: 输出调试日志到控制台
 		}
 	}
 }

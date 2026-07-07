@@ -77,6 +77,8 @@ namespace BTitlesLocalizationPatch
 						BiomeNameHook.GetActualTitleNamePrefixHook)
 				);
 				HookInstalled = true;
+				Diagnostics.DebugLog.Info(Language.GetTextValue(
+					$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.HookApplied"));
 			}
 			else
 			{

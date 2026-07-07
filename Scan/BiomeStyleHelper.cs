@@ -25,12 +25,7 @@ namespace BTitlesLocalizationPatch.Scan
 				用 FNV-1a 取色相 (0-360)，固定饱和度 50%，亮度 60%
 				比纯哈希颜色更饱满悦目，且确定不变
 				*/
-				uint hash = 2166136261;
-				foreach (char c in biome.FullName)
-				{
-					hash ^= c;
-					hash *= 16777619;
-				}
+				uint hash = Fnv1aHash(biome.FullName);
 				title = HslToRgb((hash % 3600) / 10f, 0.5f, 0.6f);
 			}
 
@@ -132,16 +127,22 @@ namespace BTitlesLocalizationPatch.Scan
 			if (string.IsNullOrEmpty(key))
 				return Color.Gray;
 
-			uint hash = 2166136261;
-			foreach (char c in key)
-			{
-				hash ^= c;
-				hash *= 16777619;
-			}
+			uint hash = Fnv1aHash(key);
 			return HslToRgb((hash % 3600) / 10f, 0.5f, 0.6f);
 		}
 
 		/* HSL → RGB 转换 */
+		private static uint Fnv1aHash(string input)
+		{
+			uint hash = 2166136261;
+			foreach (char c in input)
+			{
+				hash ^= c;
+				hash *= 16777619;
+			}
+			return hash;
+		}
+
 		private static Color HslToRgb(float h, float s, float l)
 		{
 			// 防御：NaN/Infinity 兜底，防止哈希异常值破坏颜色计算

@@ -34,6 +34,9 @@ namespace BTitlesLocalizationPatch
 			// 防御：Config 可能为 null（BTitles 版本变更或未初始化）
 			var config = self.Config;
 
+			// 预清理 Key 中的空格，供本地化键名拼接使用
+			string sanitizedKey = biomeEntry.Key.Replace(" ", "_");
+
 			// 进出群系时日志输出，方便排查注册/显示问题
 			Diagnostics.DebugLog.Info(
 				$"Biome: Key={biomeEntry.Key} Title={biomeEntry.Title} Scope={biomeEntry.LocalizationScope}");
@@ -77,7 +80,7 @@ namespace BTitlesLocalizationPatch
 				&& Language.ActiveCulture.Name != "en-US")
 			{
 				string modLocKey = $"Mods.{biomeEntry.LocalizationScope}" +
-					$".Biomes.{biomeEntry.Key.Replace(" ", "_")}.DisplayName";
+					$".Biomes.{sanitizedKey}.DisplayName";
 
 				if (Language.Exists(modLocKey))
 				{
@@ -95,7 +98,7 @@ namespace BTitlesLocalizationPatch
 			if (Language.ActiveCulture.Name != "en-US")
 			{
 				string btitlesKey = $"Mods.BiomeTitles.Title." +
-					$"{biomeEntry.LocalizationScope}.{biomeEntry.Key.Replace(" ", "_")}";
+					$"{biomeEntry.LocalizationScope}.{sanitizedKey}";
 
 				if (Language.Exists(btitlesKey))
 				{
@@ -117,7 +120,7 @@ namespace BTitlesLocalizationPatch
 			if (Language.ActiveCulture.Name != "en-US")
 			{
 				string extraKey = $"Mods.{nameof(BTitlesLocalizationPatch)}" +
-					$".ExtraTitles.{biomeEntry.LocalizationScope}.{biomeEntry.Key.Replace(" ", "_")}";
+					$".ExtraTitles.{biomeEntry.LocalizationScope}.{sanitizedKey}";
 
 				if (Language.Exists(extraKey))
 				{
@@ -135,8 +138,8 @@ namespace BTitlesLocalizationPatch
 				}
 			}
 
-			// 5. 回退到原始 Title（兜底，永不返回 null）
-			return biomeEntry.Title ?? "";
+			// 5. 回退到原始方法（调用 orig 以兼容未来版本的新逻辑）
+			return orig(self, biomeEntry);
 		}
 	}
 }

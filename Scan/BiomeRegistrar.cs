@@ -149,7 +149,7 @@ namespace BTitlesLocalizationPatch.Scan
 			}
 			// totalModBiomes = 更新数 + 新增数 + 跳过数（非占位群系被跳过但本就不该计入）
 			// 但更简单的是：扫描后的字典增量应 >= added
-			Logger.Info($"[防御] 模组群系总数={totalModBiomes}, " +
+			mod.Logger.Info($"[防御] 模组群系总数={totalModBiomes}, " +
 				$"更新={updated}+新增={added}+跳过={skipped}=" +
 				$"{updated + added + skipped}, 符合预期: {totalModBiomes == updated + added + skipped}");
 #endif

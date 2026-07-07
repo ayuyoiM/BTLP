@@ -6,6 +6,7 @@ Logs: {
 	DetectionEx: Exception detecting {0}.{1}: {2}
 	DictNull: BiomeDictionary is null
 	DictStats: Dictionary has {0} entries, {1} check functions
+	HookApplied: GetActualTitleName Detour patch applied successfully
 	HookGetTitleNameFailed: Failed to find BiomeTitlesUI.GetActualTitleName
 	IconLoadFailed: Failed to load icon for biome [{0}]: {1}
 	LoadReentry: Mod Load called again, skipped
@@ -30,12 +31,18 @@ Configs: {
 
 		EnableScan: {
 			Label: Scan for new biomes
-			Tooltip: Scan for ModBiome in each module that were not included in the original module, and add them to the detection list (You need to reload once to scan the new biomes.)
+			Tooltip:
+				'''
+				Scan for ModBiome in each module that were not included in the original module, and add them to the detection list
+
+				ON → Reload required to trigger the scan
+				OFF → No reload needed, but registered biomes will still show up
+				'''
 		}
 
 		EnableAutoStyling: {
 			Label: Color Scheme
-			Tooltip: Assign title colors and icons to newly added groups (You'll need to reload the page once to set the icon and colors.)
+			Tooltip: Assign title colors to newly added biomes
 		}
 
 		EnableDebugLog: {

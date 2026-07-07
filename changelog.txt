@@ -1,2 +1,2 @@
-V1.1.4
-- SkippedPlaceholder 日志改用 mod.Logger.Info 输出，不再受调试日志开关控制
+V1.1.5
+优化了一堆你看不到的东西喵~
