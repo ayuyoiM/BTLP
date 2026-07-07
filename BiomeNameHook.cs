@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Terraria.Localization;
@@ -18,6 +19,10 @@ namespace BTitlesLocalizationPatch
 	*/
 	internal static class BiomeNameHook
 	{
+		// 颜色采样缓存：避免每次进出群系都 GetData 回读 GPU 纹理
+		private static readonly ConcurrentDictionary<string, Color> _sampledColors = new();
+
+		internal static void ClearColorCache() => _sampledColors.Clear();
 		public static string GetActualTitleNamePrefixHook(
 			Func<BiomeTitlesUI, BiomeEntry, string> orig,
 			BiomeTitlesUI self,
@@ -41,10 +46,14 @@ namespace BTitlesLocalizationPatch
 			Diagnostics.DebugLog.Info(
 				$"Biome: Key={biomeEntry.Key} Title={biomeEntry.Title} Scope={biomeEntry.LocalizationScope}");
 
-			// 惰性采样：有图标但颜色未设时从图标取色
+			// 惰性采样：有图标但颜色未设时从图标取色（首次采样后缓存，避免反复 GetData）
 			if (biomeEntry.TitleColor == default && biomeEntry.Icon != null)
 			{
-				Color sampled = BiomeStyleHelper.SampleDominantColor(biomeEntry.Icon);
+				if (!_sampledColors.TryGetValue(biomeEntry.Key, out Color sampled))
+				{
+					sampled = BiomeStyleHelper.SampleDominantColor(biomeEntry.Icon);
+					_sampledColors[biomeEntry.Key] = sampled;
+				}
 				biomeEntry.TitleColor = sampled;
 				biomeEntry.StrokeColor = new Color(
 					(int)(sampled.R * 0.35f),

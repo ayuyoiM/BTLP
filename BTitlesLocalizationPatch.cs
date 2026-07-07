@@ -111,6 +111,9 @@ namespace BTitlesLocalizationPatch
 			BiomeDictField = null;
 			CheckFuncsField = null;
 			_loaded = false;
+
+			// 清理颜色采样缓存
+			BiomeNameHook.ClearColorCache();
 		}
 	}
 }
