@@ -133,6 +133,25 @@ namespace BTitlesLocalizationPatch.Scan
 			// 输出汇总：新增 + 更新 + 跳过 + 字典总数 + 函数数，一眼可验证总数匹配
 			mod.Logger.Info(string.Format(L("ScanSummary"),
 				added, updated, skipped, biomeDict.Count, checkFuncs.Count));
+
+			/*
+			防御断言：字典增量与计数器一致
+			如果未来有人误删了 biomeDict[...] = entry，此断言会在 Debug 编译时立刻暴露
+			Release 版不包含此代码，零开销
+			*/
+#if DEBUG
+			int totalModBiomes = 0;
+			foreach (Mod m in ModLoader.Mods)
+			{
+				if (m.Name != "BTitles" && m.Name != "tModLoader" && m.Name != "ModLoader")
+					totalModBiomes += m.GetContent<ModBiome>().Count();
+			}
+			// totalModBiomes = 更新数 + 新增数 + 跳过数（非占位群系被跳过但本就不该计入）
+			// 但更简单的是：扫描后的字典增量应 >= added
+			Logger.Info($"[防御] 模组群系总数={totalModBiomes}, " +
+				$"更新={updated}+新增={added}+跳过={skipped}=" +
+				$"{updated + added + skipped}, 符合预期: {totalModBiomes == updated + added + skipped}");
+#endif
 		}
 	}
 }

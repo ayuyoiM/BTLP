@@ -27,6 +27,13 @@ namespace BTitlesLocalizationPatch
 			if (self == null || biomeEntry == null)
 				return "";
 
+			// 防御：Hook 未正确安装时静默降级，不抛异常
+			if (!BTitlesLocalizationPatch.HookInstalled)
+				return biomeEntry.Title;
+
+			// 防御：Config 可能为 null（BTitles 版本变更或未初始化）
+			var config = self.Config;
+
 			// 进出群系时日志输出，方便排查注册/显示问题
 			Diagnostics.DebugLog.Info(
 				$"群系: Key={biomeEntry.Key} Title={biomeEntry.Title} Scope={biomeEntry.LocalizationScope}");
@@ -57,9 +64,12 @@ namespace BTitlesLocalizationPatch
 					$"色盘兜底: [{biomeEntry.Key}] → ({fallback.R},{fallback.G},{fallback.B})");
 			}
 
-			// 1. 用户自定义生物群系名称
-			string customName = self.Config?.CustomBiomeNames?
-				.FirstOrDefault(n => n.CurrentName == biomeEntry.Title)?.NewName;
+			// 1. 用户自定义生物群系名称（Config 可能为 null）
+			bool hasConfig = config != null;
+			string customName = hasConfig
+				? config.CustomBiomeNames?.FirstOrDefault(
+					n => n.CurrentName == biomeEntry.Title)?.NewName
+				: null;
 			if (customName != null) return customName;
 
 			// 2. 读源模组本地化 Mods.{Scope}.Biomes.{Key}.DisplayName（跳过原版 Terraria）
@@ -73,8 +83,8 @@ namespace BTitlesLocalizationPatch
 				{
 					string translatedName = Language.GetTextValue(modLocKey);
 
-					// 对翻译结果再应用一次自定义改名
-					customName = self.Config?.CustomBiomeNames?
+					// 对翻译结果再应用一次自定义改名（config 可能为 null）
+					customName = config?.CustomBiomeNames?
 						.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
 
 					return customName ?? translatedName;
@@ -91,10 +101,15 @@ namespace BTitlesLocalizationPatch
 				{
 					string translatedName = Language.GetTextValue(btitlesKey);
 
-					customName = self.Config?.CustomBiomeNames?
-						.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
+					// 防御：config 为 null 时跳过自定义改名
+					if (hasConfig)
+					{
+						customName = config.CustomBiomeNames?
+							.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
+						if (customName != null) return customName;
+					}
 
-					return customName ?? translatedName;
+					return translatedName;
 				}
 			}
 
@@ -108,15 +123,20 @@ namespace BTitlesLocalizationPatch
 				{
 					string translatedName = Language.GetTextValue(extraKey);
 
-					customName = self.Config?.CustomBiomeNames?
-						.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
+					// 防御：config 为 null 时跳过自定义改名
+					if (hasConfig)
+					{
+						customName = config.CustomBiomeNames?
+							.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
+						if (customName != null) return customName;
+					}
 
-					return customName ?? translatedName;
+					return translatedName;
 				}
 			}
 
-			// 5. 回退到原始 Title
-			return biomeEntry.Title;
+			// 5. 回退到原始 Title（兜底，永不返回 null）
+			return biomeEntry.Title ?? "";
 		}
 	}
 }

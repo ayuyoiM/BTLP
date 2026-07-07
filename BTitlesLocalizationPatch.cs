@@ -18,15 +18,27 @@ namespace BTitlesLocalizationPatch
 	public class BTitlesLocalizationPatch : Mod
 	{
 		private Hook _getActualTitleNameHook;
+		private bool _loaded;           // 防止 Load 被重复调用
 
 		// 反射字段缓存（供 BiomeRegistrar 使用）
 		internal static FieldInfo InstanceField { get; private set; }
 		internal static FieldInfo BiomeDictField { get; private set; }
 		internal static FieldInfo CheckFuncsField { get; private set; }
 
+		// 反映 Hook 是否成功安装，Unload 时验证
+		internal static bool HookInstalled { get; private set; }
+
 		public override void Load()
 		{
 			if (Main.dedServ) return;
+
+			// 防御：防止意外重复加载
+			if (_loaded)
+			{
+				Logger.Warn("Load 被重复调用，跳过");
+				return;
+			}
+			_loaded = true;
 
 			// 初始化调试日志写入器（按级别对应 tModLoader Logger 的 Info/Warn/Error）
 			DebugLog.InfoWriter = s => Logger.Info(s);
@@ -63,10 +75,14 @@ namespace BTitlesLocalizationPatch
 					new Func<Func<BiomeTitlesUI, BiomeEntry, string>, BiomeTitlesUI, BiomeEntry, string>(
 						BiomeNameHook.GetActualTitleNamePrefixHook)
 				);
+				HookInstalled = true;
 			}
 			else
+			{
+				HookInstalled = false;
 				Logger.Error(Language.GetTextValue(
 					$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.HookGetTitleNameFailed"));
+			}
 		}
 
 		public override void PostSetupContent()
@@ -87,9 +103,11 @@ namespace BTitlesLocalizationPatch
 		{
 			_getActualTitleNameHook?.Dispose();
 			_getActualTitleNameHook = null;
+			HookInstalled = false;
 			InstanceField = null;
 			BiomeDictField = null;
 			CheckFuncsField = null;
+			_loaded = false;
 		}
 	}
 }

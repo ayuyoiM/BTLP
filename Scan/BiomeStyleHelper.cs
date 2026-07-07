@@ -144,6 +144,11 @@ namespace BTitlesLocalizationPatch.Scan
 		/* HSL → RGB 转换 */
 		private static Color HslToRgb(float h, float s, float l)
 		{
+			// 防御：NaN/Infinity 兜底，防止哈希异常值破坏颜色计算
+			if (float.IsNaN(h) || float.IsInfinity(h)) h = 0f;
+			if (float.IsNaN(s) || float.IsInfinity(s)) s = 0.5f;
+			if (float.IsNaN(l) || float.IsInfinity(l)) l = 0.6f;
+
 			float c = (1f - Math.Abs(2f * l - 1f)) * s;
 			float x = c * (1f - Math.Abs((h / 60f) % 2f - 1f));
 			float m = l - c / 2f;
