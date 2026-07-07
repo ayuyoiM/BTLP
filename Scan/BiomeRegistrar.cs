@@ -66,7 +66,7 @@ namespace BTitlesLocalizationPatch.Scan
 					if (isBiomeActiveMethod != null &&
 						isBiomeActiveMethod.DeclaringType == typeof(ModBiome))
 					{
-						DebugLog.Info(string.Format(L("SkippedPlaceholder"),
+						mod.Logger.Info(string.Format(L("SkippedPlaceholder"),
 							modBiome.Name, modBiome.DisplayName.Value));
 						skipped++;
 						continue;

@@ -1,7 +1,2 @@
-V1.1.2
-- 代码清理：移除未使用的 using 语句
-- 安全性修复：
-  - BiomeNameHook 入口加 self/biomeEntry 空保护
-  - BiomeStyleHelper 哈希算法替换为 FNV-1a 确定性哈希（避免跨 .NET 版本结果不一致）
-  - TryLoadIcon 加 try-catch 保护，加载失败静默返回 null
-- 调试日志即时生效：DebugLog.Enabled 改为实时读取 ModConfig
+V1.1.4
+- SkippedPlaceholder 日志改用 mod.Logger.Info 输出，不再受调试日志开关控制
