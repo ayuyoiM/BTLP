@@ -35,7 +35,8 @@ namespace BTitlesLocalizationPatch
 			// 防御：防止意外重复加载
 			if (_loaded)
 			{
-				Logger.Warn("Load 被重复调用，跳过");
+				Logger.Warn(Language.GetTextValue(
+					$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.LoadReentry"));
 				return;
 			}
 			_loaded = true;

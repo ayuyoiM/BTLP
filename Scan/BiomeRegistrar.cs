@@ -59,11 +59,12 @@ namespace BTitlesLocalizationPatch.Scan
 				foreach (var modBiome in modBiomes)
 				{
 					// 跳过没有重写 IsBiomeActive 的占位群系（如嘉登实验室），注册了也检测不到
-					// GetBaseDefinition() 可检测到 `new` 隐藏而非 `override` 的情况
+					// 用 DeclaringType 判断：子类没重写时 DeclaringType 仍是 ModBiome
+					// 注意：不用 GetBaseDefinition()，因 fgpt 等模组的 ILHook 会干扰其行为
 					var isBiomeActiveMethod = modBiome.GetType().GetMethod(
 						"IsBiomeActive", BindingFlags.Public | BindingFlags.Instance);
 					if (isBiomeActiveMethod != null &&
-						isBiomeActiveMethod.GetBaseDefinition() == isBiomeActiveMethod)
+						isBiomeActiveMethod.DeclaringType == typeof(ModBiome))
 					{
 						DebugLog.Info(string.Format(L("SkippedPlaceholder"),
 							modBiome.Name, modBiome.DisplayName.Value));

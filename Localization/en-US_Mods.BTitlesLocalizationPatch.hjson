@@ -8,6 +8,7 @@ Logs: {
 	DictStats: Dictionary has {0} entries, {1} check functions
 	HookGetTitleNameFailed: Failed to find BiomeTitlesUI.GetActualTitleName
 	IconLoadFailed: Failed to load icon for biome [{0}]: {1}
+	LoadReentry: Mod Load called again, skipped
 	InstanceNull: Instance is null
 	NewBiome: New: {0} → {1}
 	ReflectCheckerNull: Failed to reflect BiomeCheckFunctions field

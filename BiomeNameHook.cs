@@ -36,7 +36,7 @@ namespace BTitlesLocalizationPatch
 
 			// 进出群系时日志输出，方便排查注册/显示问题
 			Diagnostics.DebugLog.Info(
-				$"群系: Key={biomeEntry.Key} Title={biomeEntry.Title} Scope={biomeEntry.LocalizationScope}");
+				$"Biome: Key={biomeEntry.Key} Title={biomeEntry.Title} Scope={biomeEntry.LocalizationScope}");
 
 			// 惰性采样：有图标但颜色未设时从图标取色
 			if (biomeEntry.TitleColor == default && biomeEntry.Icon != null)
@@ -48,7 +48,7 @@ namespace BTitlesLocalizationPatch
 					(int)(sampled.G * 0.35f),
 					(int)(sampled.B * 0.35f));
 				Diagnostics.DebugLog.Info(
-					$"惰性采样: [{biomeEntry.Key}] → RGB({sampled.R},{sampled.G},{sampled.B})");
+					$"LazySample: [{biomeEntry.Key}] → RGB({sampled.R},{sampled.G},{sampled.B})");
 			}
 			else if (biomeEntry.TitleColor == default)
 			{
@@ -61,7 +61,7 @@ namespace BTitlesLocalizationPatch
 					(int)(fallback.G * 0.35f),
 					(int)(fallback.B * 0.35f));
 				Diagnostics.DebugLog.Info(
-					$"色盘兜底: [{biomeEntry.Key}] → ({fallback.R},{fallback.G},{fallback.B})");
+					$"Fallback: [{biomeEntry.Key}] → ({fallback.R},{fallback.G},{fallback.B})");
 			}
 
 			// 1. 用户自定义生物群系名称（Config 可能为 null）
