@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Localization;
@@ -25,11 +26,6 @@ namespace BTitlesLocalizationPatch.Scan
 			string L(string key) => Language.GetTextValue(
 				$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{key}");
 
-			mod.Logger.Info(L("PostSetupContentStart"));
-			mod.Logger.Info($"{L("InstanceField")}, {BTitlesLocalizationPatch.InstanceField?.Name ?? "null"}");
-			mod.Logger.Info($"{L("DictField")}, {BTitlesLocalizationPatch.BiomeDictField?.Name ?? "null"}");
-			mod.Logger.Info($"{L("CheckerField")}, {BTitlesLocalizationPatch.CheckFuncsField?.Name ?? "null"}");
-
 			var instance = BTitlesLocalizationPatch.InstanceField?.GetValue(null);
 			if (instance == null) { mod.Logger.Error(L("InstanceNull")); return; }
 
@@ -43,8 +39,9 @@ namespace BTitlesLocalizationPatch.Scan
 
 			mod.Logger.Info(string.Format(L("DictStats"), biomeDict.Count, checkFuncs.Count));
 
-			int added = 0;
-			int updated = 0;
+			int added = 0;          // 新增群系数
+			int updated = 0;        // 更新标题数
+			int skipped = 0;        // 占位群系跳过数
 
 			// 收集所有模组的 ModBiome 缓存，供注册字典和检测函数共用
 			var allModBiomes = new List<(Mod Mod, ModBiome Biome)>();
@@ -61,6 +58,19 @@ namespace BTitlesLocalizationPatch.Scan
 
 				foreach (var modBiome in modBiomes)
 				{
+					// 跳过没有重写 IsBiomeActive 的占位群系（如嘉登实验室），注册了也检测不到
+					// GetBaseDefinition() 可检测到 `new` 隐藏而非 `override` 的情况
+					var isBiomeActiveMethod = modBiome.GetType().GetMethod(
+						"IsBiomeActive", BindingFlags.Public | BindingFlags.Instance);
+					if (isBiomeActiveMethod != null &&
+						isBiomeActiveMethod.GetBaseDefinition() == isBiomeActiveMethod)
+					{
+						DebugLog.Info(string.Format(L("SkippedPlaceholder"),
+							modBiome.Name, modBiome.DisplayName.Value));
+						skipped++;
+						continue;
+					}
+
 					allModBiomes.Add((otherMod, modBiome));
 
 					if (biomeDict.TryGetValue(modBiome.Name, out var existing))
@@ -80,13 +90,15 @@ namespace BTitlesLocalizationPatch.Scan
 							LocalizationScope = otherMod.Name
 						};
 
-						// 自动上新群系配色和图标（按开关）
+						// 始终尝试加载图标，供 Hook 惰性采样
+						entry.Icon = BiomeStyleHelper.TryLoadIcon(modBiome);
+
+						// 自动上新群系配色（按开关）
 						if (enableStyling)
 						{
 							BiomeStyleHelper.GetTitleColors(modBiome, out Color tc, out Color sc);
 							entry.TitleColor = tc;
 							entry.StrokeColor = sc;
-							entry.Icon = BiomeStyleHelper.TryLoadIcon(modBiome);
 						}
 
 						biomeDict[modBiome.Name] = entry;
@@ -118,10 +130,9 @@ namespace BTitlesLocalizationPatch.Scan
 				return "";
 			});
 
-			mod.Logger.Info(string.Format(L("DictStats"), biomeDict.Count, checkFuncs.Count));
-			if (added > 0) mod.Logger.Info(string.Format(L("AddedCount"), added));
-			if (updated > 0) mod.Logger.Info(string.Format(L("UpdatedCount"), updated));
-			mod.Logger.Info(L("PostSetupContentEnd"));
+			// 输出汇总：新增 + 更新 + 跳过 + 字典总数 + 函数数，一眼可验证总数匹配
+			mod.Logger.Info(string.Format(L("ScanSummary"),
+				added, updated, skipped, biomeDict.Count, checkFuncs.Count));
 		}
 	}
 }

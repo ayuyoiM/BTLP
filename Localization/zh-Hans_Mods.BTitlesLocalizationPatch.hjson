@@ -1,26 +1,21 @@
 ExtraTitles.Terraria.Aether: 以太
 
 Logs: {
-	AddedCount: 自动注册了 {0} 个未收录群系
-	ScanDisabled: 未启用扫描新群系，跳过群系注册
-	CheckerField: Checker 字段={0}
-	CheckerNull: BiomeCheckFunctions 为 null
-	DetectionEx: 检测 {0}.{1} 时异常: {2}
-	DictField: Dict 字段={0}
-	DictNull: BiomeDictionary 为 null
-	DictStats: 字典现有 {0} 个条目，{1} 个检测函数
-	HookGetTitleNameFailed: 未找到 BiomeTitlesUI.GetActualTitleName
-	IconLoadFailed: 加载群系 [{0}] 的图标失败: {1}
-	InstanceField: Instance 字段={0}
-	InstanceNull: Instance 为 null
-	NewBiome: 新增: {0} → {1}
-	PostSetupContentEnd: === PostSetupContent 结束 ===
-	PostSetupContentStart: === PostSetupContent 开始 ===
-	ReflectCheckerNull: 未反射到 BiomeCheckFunctions 字段
-	ReflectDictNull: 未反射到 BiomeDictionary 字段
-	ReflectInstanceNull: 未反射到 Instance 字段
-	ScanningMod: 扫描模组 [{0}] 共 {1} 个 ModBiome
-	UpdatedCount: 更新了 {0} 个群系的 DisplayName
+	ScanEnabled: 已启用扫描新群系，开始扫描……
+	CheckerNull: 未获取到群系检测函数列表，自动发现功能已禁用
+	DetectionEx: 检测 [{0}] 模组的 [{1}] 群系时出错: {2}
+	DictNull: 未获取到群系字典，自动发现功能已禁用
+	DictStats: 群系字典共 {0} 项，检测函数共 {1} 个
+	HookGetTitleNameFailed: 未找到 BiomeTitlesUI.GetActualTitleName 方法，Hook 注册失败
+	IconLoadFailed: 加载群系 [{0}] 的图标时失败: {1}
+	InstanceNull: 未获取到 BTitles 主模组实例，自动发现功能已禁用
+	NewBiome: 新增群系: [{0}] → {1}
+	ReflectCheckerNull: 反射获取检测函数字段失败
+	ReflectDictNull: 反射获取群系字典字段失败
+	ReflectInstanceNull: 反射获取主模组实例字段失败
+	ScanningMod: 正在扫描模组 [{0}]，发现 {1} 个模组群系
+	SkippedPlaceholder: 跳过占位群系: [{0}] → {1}（未重写检测方法）
+	ScanSummary: 扫描完毕：{0} 新增，{1} 更新，{2} 跳过 | 字典 {3} 项，检测 {4} 个
 }
 
 Configs: {

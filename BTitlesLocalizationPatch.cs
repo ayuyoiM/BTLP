@@ -76,10 +76,11 @@ namespace BTitlesLocalizationPatch
 			var config = ModContent.GetInstance<BTitlesConfig>();
 
 			if (config.EnableScan)
-				Scan.BiomeRegistrar.Run(this, config.EnableAutoStyling);
-			else
+			{
 				Logger.Info(Language.GetTextValue(
-					$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanDisabled"));
+					$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanEnabled"));
+				Scan.BiomeRegistrar.Run(this, config.EnableAutoStyling);
+			}
 		}
 
 		public override void Unload()

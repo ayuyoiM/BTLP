@@ -1,26 +1,21 @@
 ExtraTitles.Terraria.Aether: Aether
 
 Logs: {
-	AddedCount: Auto-registered {0} unregistered biomes
-	ScanDisabled: Scan for new biomes is not enabled; skip biome registration.
-	CheckerField: Checker field={0}
+	ScanEnabled: Biome auto-scan enabled, starting scan...
 	CheckerNull: BiomeCheckFunctions is null
 	DetectionEx: Exception detecting {0}.{1}: {2}
-	DictField: Dict field={0}
 	DictNull: BiomeDictionary is null
 	DictStats: Dictionary has {0} entries, {1} check functions
 	HookGetTitleNameFailed: Failed to find BiomeTitlesUI.GetActualTitleName
 	IconLoadFailed: Failed to load icon for biome [{0}]: {1}
-	InstanceField: Instance field={0}
 	InstanceNull: Instance is null
 	NewBiome: New: {0} → {1}
-	PostSetupContentEnd: === PostSetupContent End ===
-	PostSetupContentStart: === PostSetupContent Start ===
 	ReflectCheckerNull: Failed to reflect BiomeCheckFunctions field
 	ReflectDictNull: Failed to reflect BiomeDictionary field
 	ReflectInstanceNull: Failed to reflect Instance field
 	ScanningMod: Scanning mod [{0}] with {1} ModBiomes
-	UpdatedCount: Updated {0} biomes DisplayName
+	SkippedPlaceholder: Skipped placeholder biome: [{0}] {1} (no IsBiomeActive override)
+	ScanSummary: Scan done: {0} added, {1} updated, {2} skipped | {3} entries, {4} checks
 }
 
 Configs: {

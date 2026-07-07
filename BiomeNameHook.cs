@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using Microsoft.Xna.Framework;
 using Terraria.Localization;
 using BTitles;
+using BTitlesLocalizationPatch.Scan;
 
 namespace BTitlesLocalizationPatch
 {
@@ -28,6 +30,32 @@ namespace BTitlesLocalizationPatch
 			// 进出群系时日志输出，方便排查注册/显示问题
 			Diagnostics.DebugLog.Info(
 				$"群系: Key={biomeEntry.Key} Title={biomeEntry.Title} Scope={biomeEntry.LocalizationScope}");
+
+			// 惰性采样：有图标但颜色未设时从图标取色
+			if (biomeEntry.TitleColor == default && biomeEntry.Icon != null)
+			{
+				Color sampled = BiomeStyleHelper.SampleDominantColor(biomeEntry.Icon);
+				biomeEntry.TitleColor = sampled;
+				biomeEntry.StrokeColor = new Color(
+					(int)(sampled.R * 0.35f),
+					(int)(sampled.G * 0.35f),
+					(int)(sampled.B * 0.35f));
+				Diagnostics.DebugLog.Info(
+					$"惰性采样: [{biomeEntry.Key}] → RGB({sampled.R},{sampled.G},{sampled.B})");
+			}
+			else if (biomeEntry.TitleColor == default)
+			{
+				// 无图标也无颜色 → HSL 色盘兜底
+				Color fallback = BiomeStyleHelper.GetFallbackColor(
+					biomeEntry.Key ?? biomeEntry.Title ?? "");
+				biomeEntry.TitleColor = fallback;
+				biomeEntry.StrokeColor = new Color(
+					(int)(fallback.R * 0.35f),
+					(int)(fallback.G * 0.35f),
+					(int)(fallback.B * 0.35f));
+				Diagnostics.DebugLog.Info(
+					$"色盘兜底: [{biomeEntry.Key}] → ({fallback.R},{fallback.G},{fallback.B})");
+			}
 
 			// 1. 用户自定义生物群系名称
 			string customName = self.Config?.CustomBiomeNames?
