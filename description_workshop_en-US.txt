@@ -1,12 +1,45 @@
-**Note: This mod was created using AI. Please refrain from using if you mind.**
+[i]This project was developed with the assistance of AI.[/i]
 
-[h2]Provides a localization enhancement patch for [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2992680615] Biome Titles [/url][/h2]
+A localization enhancement mod for [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2992680615]Biome Titles[/url].
+
+Biome Titles uses manually curated entries for biome names.
+This mod hooks into the title resolution to automate that process — reading translated names directly from each mod's own localization files.
+
+[h2]Features[/h2]
 [list]
-[*]Automatically uses ModBiome.DisplayName to show translated biome names
-[*]Prioritizes reading the source mod's localization files (supports localization mods)
-[*]Provides supplementary translations (Aether)
-
-The following features are disabled by default
-[*]Auto-discovers unregistered biomes from mods and adds them to BTitles
-[*]Auto-assigns title colors and bestiary icons to new biomes
+[*]Biome Name Localization — Automatically loads each mod's translation files to display localized biome names
+[*]Source Mod Priority — Prioritizes the biome's own mod localization (supports translation mods)
+[*]Extra Translations — Provides missing Biome Titles translations (e.g. Aether)
+[*]Auto Scan — Automatically discovers unregistered ModBiomes and adds them to Biome Titles [i](disabled by default)[/i]
+[*]Auto Styling — Assigns title colors to newly registered biomes [i](disabled by default)[/i]
 [/list]
+
+[h2]Name Resolution Order[/h2]
+The mod looks up biome names in the following priority order, returning the first match:
+[list=1]
+[*]User Custom — Names manually specified in the mod config
+[*]Source Mod Localization — Reads from the biome's own mod localization files
+[*]Biome Titles Localization — Uses Biome Titles' manually curated translations
+[*]Extra Translations — Translations provided by this patch (e.g. Aether)
+[*]Original Name — Falls back to the original English name if nothing else matches
+[/list]
+
+[h2]Why this mod?[/h2]
+Biome Titles uses manually curated entries for biome names, which means new modded biomes may not show correctly until an update arrives. This mod hooks into the title resolution to read names directly from each mod's localization files, replacing manual maintenance with automation.
+
+[h2]Configuration[/h2]
+Find "Biome Titles Localization Patch" in the in-game mod config:
+[list]
+[*]Scan for new biomes — Auto-discover and register unregistered ModBiomes (requires reload)
+[*]Color Scheme — Assign title colors to newly added biomes (requires Scan enabled)
+[*]Debug logs — Output debug info to client.log for troubleshooting
+[/list]
+
+[h2]Compatibility[/h2]
+[list]
+[*]Client-side only — no impact on multiplayer
+[*]Uses MonoMod hooks — fully compatible with Biome Titles
+[*]Auto scan uses tModLoader native reflection — no specific mod dependency
+[/list]
+
+[i]This mod is open source — view the source code on [url=https://github.com/ayuyoiM/BTLP]GitHub[/url].[/i]
