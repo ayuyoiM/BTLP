@@ -24,11 +24,7 @@ The mod looks up biome names in the following priority order, returning the firs
 [*]Original Name — Falls back to the original English name if nothing else matches
 [/list]
 
-[h2]Why this mod?[/h2]
-Biome Titles uses manually curated entries for biome names, which means new modded biomes may not show correctly until an update arrives. This mod hooks into the title resolution to read names directly from each mod's localization files, replacing manual maintenance with automation.
-
 [h2]Configuration[/h2]
-Find "Biome Titles Localization Patch" in the in-game mod config:
 [list]
 [*]Scan for new biomes — Auto-discover and register unregistered ModBiomes (requires reload)
 [*]Color Scheme — Assign title colors to newly added biomes (requires Scan enabled)
