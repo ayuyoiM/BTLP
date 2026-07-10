@@ -114,6 +114,14 @@ namespace BTitlesLocalizationPatch
 
 			// 清理颜色采样缓存
 			BiomeNameHook.ClearColorCache();
+
+			// 从 BTitles 检测函数列表移除本模组注册的 lambda
+			Scan.BiomeRegistrar.Cleanup();
+
+			// 清理调试日志写入器，防止卸载后残留引用
+			Diagnostics.DebugLog.InfoWriter = s => { };
+			Diagnostics.DebugLog.WarnWriter = s => { };
+			Diagnostics.DebugLog.ErrorWriter = s => { };
 		}
 	}
 }

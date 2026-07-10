@@ -21,6 +21,8 @@ namespace BTitlesLocalizationPatch.Scan
 	*/
 	internal static class BiomeRegistrar
 	{
+		// 保存注册的检测函数引用，供 Unload 时移除
+		private static Func<Player, string> _registeredCheckFunc;
 		public static void Run(Mod mod, bool enableStyling)
 		{
 			string L(string key) => Language.GetTextValue(
@@ -113,7 +115,7 @@ namespace BTitlesLocalizationPatch.Scan
 			注册一个统一的检测函数，插到 BiomeCheckFunctions 最前面
 			走 tModLoader 原生 ModBiome.IsBiomeActive，大小群系都能正确识别
 			*/
-			checkFuncs.Insert(0, player =>
+			_registeredCheckFunc = player =>
 			{
 				foreach (var (otherMod, mb) in allModBiomes)
 				{
@@ -129,7 +131,8 @@ namespace BTitlesLocalizationPatch.Scan
 					}
 				}
 				return "";
-			});
+			};
+			checkFuncs.Insert(0, _registeredCheckFunc);
 
 			// 输出汇总：新增 + 更新 + 跳过 + 字典总数 + 函数数，一眼可验证总数匹配
 			mod.Logger.Info(string.Format(L("ScanSummary"),
@@ -153,6 +156,25 @@ namespace BTitlesLocalizationPatch.Scan
 				$"更新={updated}+新增={added}+跳过={skipped}=" +
 				$"{updated + added + skipped}, 符合预期: {totalModBiomes == updated + added + skipped}");
 #endif
+		}
+
+		/*
+		清理注册的检测函数，在 Unload 时从 BTitles 的 BiomeCheckFunctions 列表中移除
+		防止热重载时重复累积 lambda，导致无效的额外检测调用
+		*/
+		public static void Cleanup()
+		{
+			if (_registeredCheckFunc == null) return;
+
+			var instance = BTitlesLocalizationPatch.InstanceField?.GetValue(null);
+			if (instance == null) return;
+
+			var checkFuncs = BTitlesLocalizationPatch.CheckFuncsField?.GetValue(instance)
+				as List<Func<Player, string>>;
+			if (checkFuncs == null) return;
+
+			checkFuncs.Remove(_registeredCheckFunc);
+			_registeredCheckFunc = null;
 		}
 	}
 }
