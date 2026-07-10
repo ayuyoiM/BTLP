@@ -104,7 +104,9 @@ namespace BTitlesLocalizationPatch
 
 		public override void Unload()
 		{
-			_getActualTitleNameHook?.Dispose();
+			// 单独 try-catch 包裹 Dispose，防止它抛异常阻断后续清理
+			try { _getActualTitleNameHook?.Dispose(); }
+			catch (Exception ex) { Logger.Warn($"Hook Dispose failed: {ex.Message}"); }
 			_getActualTitleNameHook = null;
 			HookInstalled = false;
 			InstanceField = null;

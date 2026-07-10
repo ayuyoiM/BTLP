@@ -40,7 +40,8 @@ namespace BTitlesLocalizationPatch
 			var config = self.Config;
 
 			// 预清理 Key 中的空格，供本地化键名拼接使用
-			string sanitizedKey = biomeEntry.Key.Replace(" ", "_");
+			string key = biomeEntry.Key ?? "";
+			string sanitizedKey = key.Replace(" ", "_");
 
 			// 进出群系时日志输出，方便排查注册/显示问题
 			Diagnostics.DebugLog.Info(

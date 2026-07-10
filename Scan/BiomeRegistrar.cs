@@ -23,8 +23,12 @@ namespace BTitlesLocalizationPatch.Scan
 	{
 		// 保存注册的检测函数引用，供 Unload 时移除
 		private static Func<Player, string> _registeredCheckFunc;
+
 		public static void Run(Mod mod, bool enableStyling)
 		{
+			// 双重保险：先清理上次可能残留的委托，再注册新的
+			Cleanup();
+
 			string L(string key) => Language.GetTextValue(
 				$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{key}");
 
@@ -128,6 +132,9 @@ namespace BTitlesLocalizationPatch.Scan
 					{
 						// 单个群系检测异常，不影响其他群系
 						DebugLog.Warn(string.Format(L("DetectionEx"), otherMod.Name, mb.Name, ex.Message));
+#if DEBUG
+						DebugLog.Warn($"StackTrace: {ex.StackTrace}");
+#endif
 					}
 				}
 				return "";
@@ -166,15 +173,27 @@ namespace BTitlesLocalizationPatch.Scan
 		{
 			if (_registeredCheckFunc == null) return;
 
-			var instance = BTitlesLocalizationPatch.InstanceField?.GetValue(null);
-			if (instance == null) return;
+			try
+			{
+				var instance = BTitlesLocalizationPatch.InstanceField?.GetValue(null);
+				if (instance == null) return;
 
-			var checkFuncs = BTitlesLocalizationPatch.CheckFuncsField?.GetValue(instance)
-				as List<Func<Player, string>>;
-			if (checkFuncs == null) return;
+				var checkFuncs = BTitlesLocalizationPatch.CheckFuncsField?.GetValue(instance)
+					as List<Func<Player, string>>;
+				if (checkFuncs == null) return;
 
-			checkFuncs.Remove(_registeredCheckFunc);
-			_registeredCheckFunc = null;
+				checkFuncs.Remove(_registeredCheckFunc);
+			}
+			catch (Exception ex)
+			{
+				// 如果有一天 BTitles 突然复活更新了，这条日志会告诉我们需要改什么
+				Diagnostics.DebugLog.Warn($"Cleanup: failed to remove check func - {ex.Message}");
+			}
+			finally
+			{
+				// 确保引用一定被释放，即使反射或移除操作抛异常
+				_registeredCheckFunc = null;
+			}
 		}
 	}
 }
