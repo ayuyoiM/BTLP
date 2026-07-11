@@ -1,7 +1,6 @@
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using ReLogic.Content;
 using Terraria.Localization;
 using Terraria.ModLoader;
 using BTitlesLocalizationPatch.Diagnostics;

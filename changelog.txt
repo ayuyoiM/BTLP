@@ -1,2 +1,5 @@
-V1.1.5
-优化了一堆你看不到的东西喵~
+V1.1.6
+修复
+  - Hook.Dispose() 加 try-catch 包裹，防止异常阻断后续所有清理逻辑
+  - biomeEntry.Key 加 null 检查（?? ""），防止 Key 为 null 时 NRE
+  - Cleanup() 改用 try-catch-finally，反射移除失败也能确保 _registeredCheckFunc 置空

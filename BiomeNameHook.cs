@@ -50,10 +50,10 @@ namespace BTitlesLocalizationPatch
 			// 惰性采样：有图标但颜色未设时从图标取色（首次采样后缓存，避免反复 GetData）
 			if (biomeEntry.TitleColor == default && biomeEntry.Icon != null)
 			{
-				if (!_sampledColors.TryGetValue(biomeEntry.Key, out Color sampled))
+				if (!_sampledColors.TryGetValue(key, out Color sampled))
 				{
 					sampled = BiomeStyleHelper.SampleDominantColor(biomeEntry.Icon);
-					_sampledColors[biomeEntry.Key] = sampled;
+					_sampledColors[key] = sampled;
 				}
 				biomeEntry.TitleColor = sampled;
 				biomeEntry.StrokeColor = new Color(
@@ -78,11 +78,8 @@ namespace BTitlesLocalizationPatch
 			}
 
 			// 1. 用户自定义生物群系名称（Config 可能为 null）
-			bool hasConfig = config != null;
-			string customName = hasConfig
-				? config.CustomBiomeNames?.FirstOrDefault(
-					n => n.CurrentName == biomeEntry.Title)?.NewName
-				: null;
+			string customName = config?.CustomBiomeNames?.FirstOrDefault(
+				n => n.CurrentName == biomeEntry.Title)?.NewName;
 			if (customName != null) return customName;
 
 			// 2. 读源模组本地化 Mods.{Scope}.Biomes.{Key}.DisplayName（跳过原版 Terraria）
@@ -114,15 +111,11 @@ namespace BTitlesLocalizationPatch
 				{
 					string translatedName = Language.GetTextValue(btitlesKey);
 
-					// 防御：config 为 null 时跳过自定义改名
-					if (hasConfig)
-					{
-						customName = config.CustomBiomeNames?
-							.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
-						if (customName != null) return customName;
-					}
+					// 对翻译结果再应用一次自定义改名（config 可能为 null）
+					customName = config?.CustomBiomeNames?
+						.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
 
-					return translatedName;
+					return customName ?? translatedName;
 				}
 			}
 
@@ -136,15 +129,11 @@ namespace BTitlesLocalizationPatch
 				{
 					string translatedName = Language.GetTextValue(extraKey);
 
-					// 防御：config 为 null 时跳过自定义改名
-					if (hasConfig)
-					{
-						customName = config.CustomBiomeNames?
-							.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
-						if (customName != null) return customName;
-					}
+					// 对翻译结果再应用一次自定义改名（config 可能为 null）
+					customName = config?.CustomBiomeNames?
+						.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
 
-					return translatedName;
+					return customName ?? translatedName;
 				}
 			}
 
