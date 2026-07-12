@@ -1,6 +1,4 @@
-[i]本项目使用 AI 辅助开发。[/i]
-
-为 [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2992680615]生物群系名称[/url] 提供本地化增强的 tModLoader 模组。
+为 Biome Titles 提供本地化增强的 tModLoader 模组。
 
 Biome Titles 使用手动维护的方式收录群系名称。
 本补丁通过挂钩标题解析流程，用自动化取代手动维护——直接从各模组的本地化文件中读取已翻译的名称。
@@ -38,5 +36,3 @@ Biome Titles 使用手动维护的方式收录群系名称。
 [*]使用 MonoMod 挂钩方式，与 Biome Titles 兼容良好
 [*]自动扫描通过 tModLoader 原生反射实现，不依赖特定模组
 [/list]
-
-[i]本模组已开源，源码可在 [url=https://github.com/ayuyoiM/BTLP]GitHub[/url] 查看。[/i]
