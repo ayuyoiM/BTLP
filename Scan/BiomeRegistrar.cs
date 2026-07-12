@@ -45,6 +45,9 @@ namespace BTitlesLocalizationPatch.Scan
 
 			mod.Logger.Info(string.Format(L("DictStats"), biomeDict.Count, checkFuncs.Count));
 
+			// 记录扫描前的字典 Key 快照，用于异常回滚
+			var preScanKeys = new HashSet<string>(biomeDict.Keys);
+
 			int added = 0;          // 新增群系数
 			int updated = 0;        // 更新标题数
 			int skipped = 0;        // 占位群系跳过数
@@ -52,77 +55,119 @@ namespace BTitlesLocalizationPatch.Scan
 			// 收集所有模组的 ModBiome 缓存，供注册字典和检测函数共用
 			var allModBiomes = new List<(Mod Mod, ModBiome Biome)>();
 
-			foreach (Mod otherMod in ModLoader.Mods)
+			// 记录每个群系使用的字典 Key 格式，供检测函数返回正确的键名
+			// Key = "{Mod}.{BiomeName}"，Value = 字典中实际使用的 Key（命名空间键或短键）
+			var biomeToDictKey = new Dictionary<string, string>();
+
+			try
 			{
-				if (otherMod.Name == "BTitles" || otherMod.Name == "tModLoader" || otherMod.Name == "ModLoader")
-					continue;
-
-				var modBiomes = otherMod.GetContent<ModBiome>().ToArray();
-				if (modBiomes.Length == 0) continue;
-
-				mod.Logger.Info(string.Format(L("ScanningMod"), otherMod.Name, modBiomes.Length));
-
-				foreach (var modBiome in modBiomes)
+				foreach (Mod otherMod in ModLoader.Mods)
 				{
-					// 跳过没有重写 IsBiomeActive 的占位群系（如嘉登实验室），注册了也检测不到
-					// 用 DeclaringType 判断：子类没重写时 DeclaringType 仍是 ModBiome
-					// 注意：不用 GetBaseDefinition()，因 fgpt 等模组的 ILHook 会干扰其行为
-					var isBiomeActiveMethod = modBiome.GetType().GetMethod(
-						"IsBiomeActive", BindingFlags.Public | BindingFlags.Instance);
-					if (isBiomeActiveMethod != null &&
-						isBiomeActiveMethod.DeclaringType == typeof(ModBiome))
-					{
-						mod.Logger.Info(string.Format(L("SkippedPlaceholder"),
-							modBiome.Name, modBiome.DisplayName.Value));
-						skipped++;
+					if (otherMod.Name == "BTitles" || otherMod.Name == "tModLoader" || otherMod.Name == "ModLoader")
 						continue;
-					}
 
-					allModBiomes.Add((otherMod, modBiome));
+					var modBiomes = otherMod.GetContent<ModBiome>().ToArray();
+					if (modBiomes.Length == 0) continue;
 
-					if (biomeDict.TryGetValue(modBiome.Name, out var existing))
+					mod.Logger.Info(string.Format(L("ScanningMod"), otherMod.Name, modBiomes.Length));
+
+					foreach (var modBiome in modBiomes)
 					{
-						// 已收录的群系：只更新标题和本地化作用域，不动颜色/图标/副标题（以内置为主）
-						existing.Title = modBiome.DisplayName.Value;
-						existing.LocalizationScope = otherMod.Name;
-						updated++;
-					}
-					else
-					{
-						var entry = new BiomeEntry
+						// 跳过没有重写 IsBiomeActive 的占位群系（如嘉登实验室），注册了也检测不到
+						// 用 DeclaringType 判断：子类没重写时 DeclaringType 仍是 ModBiome
+						// 注意：不用 GetBaseDefinition()，因 fgpt 等模组的 ILHook 会干扰其行为
+						var isBiomeActiveMethod = modBiome.GetType().GetMethod(
+							"IsBiomeActive", BindingFlags.Public | BindingFlags.Instance);
+						if (isBiomeActiveMethod != null &&
+							isBiomeActiveMethod.DeclaringType == typeof(ModBiome))
 						{
-							Key = modBiome.Name,
-							Title = modBiome.DisplayName.Value,
-							SubTitle = otherMod.DisplayNameClean,
-							LocalizationScope = otherMod.Name
-						};
-
-						// 加载图标（供配色采样使用）
-						entry.Icon = BiomeStyleHelper.TryLoadIcon(modBiome);
-
-						// 自动上新群系配色（按开关）；关闭时若有图标也立即采样，避免运行时 GetData
-						if (enableStyling)
-						{
-							BiomeStyleHelper.GetTitleColors(modBiome, out Color tc, out Color sc);
-							entry.TitleColor = tc;
-							entry.StrokeColor = sc;
-						}
-						else if (entry.Icon != null)
-						{
-							// 运行时惰性采样前置到加载阶段
-							Color sampled = BiomeStyleHelper.SampleDominantColor(entry.Icon);
-							entry.TitleColor = sampled;
-							entry.StrokeColor = new Color(
-								(int)(sampled.R * 0.35f),
-								(int)(sampled.G * 0.35f),
-								(int)(sampled.B * 0.35f));
+							mod.Logger.Info(string.Format(L("SkippedPlaceholder"),
+								modBiome.Name, modBiome.DisplayName.Value));
+							skipped++;
+							continue;
 						}
 
-						biomeDict[modBiome.Name] = entry;
-						added++;
-						mod.Logger.Info(string.Format(L("NewBiome"), modBiome.Name, modBiome.DisplayName.Value));
+						allModBiomes.Add((otherMod, modBiome));
+
+						// 使用 "{模组名}.{群系类名}" 作为命名空间键，防止不同模组的同名群系互相覆盖
+						// 同时保留对 BTitles 短键（原版 modBiome.Name）的兼容查找
+						string namespacedKey = $"{otherMod.Name}.{modBiome.Name}";
+						string mapKey = $"{otherMod.Name}.{modBiome.Name}";
+
+						if (biomeDict.TryGetValue(namespacedKey, out var existing))
+						{
+							// 已收录（命名空间键）：之前扫描注册的，更新标题和本地化作用域
+							biomeToDictKey[mapKey] = namespacedKey;
+							existing.Title = modBiome.DisplayName.Value;
+							existing.LocalizationScope = otherMod.Name;
+							updated++;
+						}
+						else if (biomeDict.TryGetValue(modBiome.Name, out existing))
+						{
+							// 已收录（BTitles 短键）：同样更新，检测函数返回短键供 BTitles 查找
+							biomeToDictKey[mapKey] = modBiome.Name;
+							existing.Title = modBiome.DisplayName.Value;
+							existing.LocalizationScope = otherMod.Name;
+							updated++;
+						}
+						else
+						{
+							var entry = new BiomeEntry
+							{
+								Key = modBiome.Name,
+								Title = modBiome.DisplayName.Value,
+								SubTitle = otherMod.DisplayNameClean,
+								LocalizationScope = otherMod.Name
+							};
+
+							// 加载图标（供配色采样使用）
+							entry.Icon = BiomeStyleHelper.TryLoadIcon(modBiome);
+
+							// 自动上新群系配色（按开关）；关闭时若有图标也立即采样，避免运行时 GetData
+							if (enableStyling)
+							{
+								BiomeStyleHelper.GetTitleColors(modBiome, out Color tc, out Color sc);
+								entry.TitleColor = tc;
+								entry.StrokeColor = sc;
+							}
+							else if (entry.Icon != null)
+							{
+								// 运行时惰性采样前置到加载阶段
+								Color sampled = BiomeStyleHelper.SampleDominantColor(entry.Icon);
+								entry.TitleColor = sampled;
+								entry.StrokeColor = new Color(
+									(int)(sampled.R * 0.35f),
+									(int)(sampled.G * 0.35f),
+									(int)(sampled.B * 0.35f));
+							}
+
+							biomeToDictKey[mapKey] = namespacedKey;
+							biomeDict[namespacedKey] = entry;
+							added++;
+							mod.Logger.Info(string.Format(L("NewBiome"), modBiome.Name, modBiome.DisplayName.Value));
+						}
 					}
 				}
+			}
+			catch (Exception ex)
+			{
+				// 扫描中途异常：回滚本次新增的字典条目，防止残留脏数据
+				mod.Logger.Error($"Biome scan failed with exception, rolling back: {ex.Message}");
+#if DEBUG
+				DebugLog.Warn($"Scan rollback stack trace: {ex.StackTrace}");
+#endif
+
+				var keysToRemove = biomeDict.Keys
+					.Where(k => !preScanKeys.Contains(k))
+					.ToList();
+				foreach (var key in keysToRemove)
+					biomeDict.Remove(key);
+
+				// 确保不残留检测函数引用
+				_registeredCheckFunc = null;
+
+				// 已修改的条目（预存键）不做回滚——只改了 Title/Scope，无结构损坏
+				return;
 			}
 
 			/*
@@ -136,7 +181,10 @@ namespace BTitlesLocalizationPatch.Scan
 					try
 					{
 						if (mb.IsBiomeActive(player))
-							return mb.Name;
+						{
+							string mapKey = $"{otherMod.Name}.{mb.Name}";
+							return biomeToDictKey.TryGetValue(mapKey, out var dictKey) ? dictKey : mb.Name;
+						}
 					}
 					catch (Exception ex)
 					{

@@ -1,5 +1,6 @@
-V1.1.7
-改进
-  - Hook 安装前增加签名指纹验证（ValidateMethodSignature），上游 API 签名变化时优雅降级而非崩溃，日志输出实际 vs 预期签名
-  - 图标颜色采样从运行时首次进出群系时惰性加载改为 PostSetupContent 加载阶段预热，移除 ConcurrentDictionary 缓存，运行时路径纯 O(1)
-  - 新增 FormatMethodSignature 辅助方法，日志支持 out/ref 参数修饰符展示
+V1.1.8
+修复
+  - 跨模组同名群系冲突：字典 Key 改为 {Mod}.{BiomeName} 命名空间格式，不同模组的同名 ModBiome 不再互相覆盖
+  - 扫描中途异常残留脏数据：新增 preScanKeys 快照 + try-catch 回滚机制，异常时自动清理本次新增的字典条目
+  - 本地化键值为空时显示空白标题：步骤 2/3/4 增加 string.IsNullOrEmpty 检查，空值继续走回退链而非直接返回
+  - DebugLog.Enabled 高频查询 ModContent.GetInstance：增加 3 秒缓存冷却，避免 UI 渲染路径重复反射调用

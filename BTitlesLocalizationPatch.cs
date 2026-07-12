@@ -130,7 +130,7 @@ namespace BTitlesLocalizationPatch
 			var paramNames = method.GetParameters().Select(p =>
 			{
 				string name = p.ParameterType.IsByRef
-					? p.ParameterType.GetElementType()!.Name
+					? p.ParameterType.GetElementType()?.Name ?? "?"
 					: p.ParameterType.Name;
 				string mod = p.IsOut ? "out" : p.ParameterType.IsByRef ? "ref" : "";
 				return mod.Length > 0 ? $"{name} {mod}" : name;

@@ -72,11 +72,15 @@ namespace BTitlesLocalizationPatch
 				{
 					string translatedName = Language.GetTextValue(modLocKey);
 
-					// 对翻译结果再应用一次自定义改名（config 可能为 null）
-					customName = config?.CustomBiomeNames?
-						.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
+					// 防御：本地化键存在但值为空时继续回退，避免界面显示空白
+					if (!string.IsNullOrEmpty(translatedName))
+					{
+						// 对翻译结果再应用一次自定义改名（config 可能为 null）
+						customName = config?.CustomBiomeNames?
+							.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
 
-					return customName ?? translatedName;
+						return customName ?? translatedName;
+					}
 				}
 			}
 
@@ -90,11 +94,15 @@ namespace BTitlesLocalizationPatch
 				{
 					string translatedName = Language.GetTextValue(btitlesKey);
 
-					// 对翻译结果再应用一次自定义改名（config 可能为 null）
-					customName = config?.CustomBiomeNames?
-						.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
+					// 防御：本地化键存在但值为空时继续回退，避免界面显示空白
+					if (!string.IsNullOrEmpty(translatedName))
+					{
+						// 对翻译结果再应用一次自定义改名（config 可能为 null）
+						customName = config?.CustomBiomeNames?
+							.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
 
-					return customName ?? translatedName;
+						return customName ?? translatedName;
+					}
 				}
 			}
 
@@ -108,11 +116,15 @@ namespace BTitlesLocalizationPatch
 				{
 					string translatedName = Language.GetTextValue(extraKey);
 
-					// 对翻译结果再应用一次自定义改名（config 可能为 null）
-					customName = config?.CustomBiomeNames?
-						.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
+					// 防御：本地化键存在但值为空时继续回退，避免界面显示空白
+					if (!string.IsNullOrEmpty(translatedName))
+					{
+						// 对翻译结果再应用一次自定义改名（config 可能为 null）
+						customName = config?.CustomBiomeNames?
+							.FirstOrDefault(n => n.CurrentName == translatedName)?.NewName;
 
-					return customName ?? translatedName;
+						return customName ?? translatedName;
+					}
 				}
 			}
 
