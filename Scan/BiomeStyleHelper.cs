@@ -154,12 +154,12 @@ namespace BTitlesLocalizationPatch.Scan
 			float m = l - c / 2f;
 
 			float r, g, b;
-			if (h < 60f)      { r = c; g = x; b = 0f; }
+			if (h < 60f) { r = c; g = x; b = 0f; }
 			else if (h < 120f) { r = x; g = c; b = 0f; }
 			else if (h < 180f) { r = 0f; g = c; b = x; }
 			else if (h < 240f) { r = 0f; g = x; b = c; }
 			else if (h < 300f) { r = x; g = 0f; b = c; }
-			else               { r = c; g = 0f; b = x; }
+			else { r = c; g = 0f; b = x; }
 
 			return new Color(
 				ClampByte((r + m) * 255f),

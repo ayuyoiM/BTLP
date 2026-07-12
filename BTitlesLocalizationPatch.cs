@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using MonoMod.RuntimeDetour;
 using Terraria;
@@ -27,6 +28,9 @@ namespace BTitlesLocalizationPatch
 
 		// 反映 Hook 是否成功安装，Unload 时验证
 		internal static bool HookInstalled { get; private set; }
+
+		// 签名指纹缓存：GetActualTitleName 当前预期参数类型列表
+		private static readonly Type[] _expectedHookSignature = new[] { typeof(BiomeEntry) };
 
 		public override void Load()
 		{
@@ -65,20 +69,33 @@ namespace BTitlesLocalizationPatch
 				Logger.Warn(Language.GetTextValue(
 					$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ReflectCheckerNull"));
 
-			// 注册 GetActualTitleName Hook
+			// 注册 GetActualTitleName Hook（含签名指纹验证）
 			MethodInfo getTitleMethod = typeof(BiomeTitlesUI)
 				.GetMethod("GetActualTitleName", BindingFlags.NonPublic | BindingFlags.Instance);
 
 			if (getTitleMethod != null)
 			{
-				_getActualTitleNameHook = new Hook(
-					getTitleMethod,
-					new Func<Func<BiomeTitlesUI, BiomeEntry, string>, BiomeTitlesUI, BiomeEntry, string>(
-						BiomeNameHook.GetActualTitleNamePrefixHook)
-				);
-				HookInstalled = true;
-				DebugLog.Info(Language.GetTextValue(
-					$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.HookApplied"));
+				// 签名指纹验证：确认参数类型列表与预期一致
+				// 防止 BTitles 未来更新改变方法签名时，new Hook(...) 直接崩溃
+				if (!ValidateMethodSignature(getTitleMethod, _expectedHookSignature))
+				{
+					HookInstalled = false;
+					string actualSig = FormatMethodSignature(getTitleMethod);
+					Logger.Error(Language.GetTextValue(
+						$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.HookSignatureMismatch",
+						actualSig, "BiomeEntry"));
+				}
+				else
+				{
+					_getActualTitleNameHook = new Hook(
+						getTitleMethod,
+						new Func<Func<BiomeTitlesUI, BiomeEntry, string>, BiomeTitlesUI, BiomeEntry, string>(
+							BiomeNameHook.GetActualTitleNamePrefixHook)
+					);
+					HookInstalled = true;
+					DebugLog.Info(Language.GetTextValue(
+						$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.HookApplied"));
+				}
 			}
 			else
 			{
@@ -86,6 +103,39 @@ namespace BTitlesLocalizationPatch
 				Logger.Error(Language.GetTextValue(
 					$"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.HookGetTitleNameFailed"));
 			}
+		} // ── Load 结束 ──
+
+		/*
+		签名指纹验证：比较方法参数类型列表
+		参数不匹配时返回 false，避免因上游 API 变更导致 new Hook() 抛出异常
+		*/
+		private static bool ValidateMethodSignature(MethodInfo method, Type[] expectedParamTypes)
+		{
+			var actualParams = method.GetParameters();
+			if (actualParams.Length != expectedParamTypes.Length) return false;
+			for (int i = 0; i < actualParams.Length; i++)
+			{
+				if (actualParams[i].ParameterType != expectedParamTypes[i])
+					return false;
+			}
+			return true;
+		}
+
+		/*
+		格式化方法签名为可读字符串，用于签名不匹配时的日志输出
+		如：GetActualTitleName(BiomeEntry, Boolean)
+		*/
+		private static string FormatMethodSignature(MethodInfo method)
+		{
+			var paramNames = method.GetParameters().Select(p =>
+			{
+				string name = p.ParameterType.IsByRef
+					? p.ParameterType.GetElementType()!.Name
+					: p.ParameterType.Name;
+				string mod = p.IsOut ? "out" : p.ParameterType.IsByRef ? "ref" : "";
+				return mod.Length > 0 ? $"{name} {mod}" : name;
+			});
+			return $"{method.Name}({string.Join(", ", paramNames)})";
 		}
 
 		public override void PostSetupContent()
@@ -113,9 +163,6 @@ namespace BTitlesLocalizationPatch
 			BiomeDictField = null;
 			CheckFuncsField = null;
 			_loaded = false;
-
-			// 清理颜色采样缓存
-			BiomeNameHook.ClearColorCache();
 
 			// 从 BTitles 检测函数列表移除本模组注册的 lambda
 			Scan.BiomeRegistrar.Cleanup();

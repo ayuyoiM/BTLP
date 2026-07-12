@@ -8,10 +8,12 @@ Logs: {
 	DictStats: 群系字典共 {0} 项，检测函数共 {1} 个
 	HookApplied: GetActualTitleName Detour 补丁已成功应用
 	HookGetTitleNameFailed: 未找到 BiomeTitlesUI.GetActualTitleName 方法，Hook 注册失败
+	HookSignatureMismatch: Hook 签名不匹配：实际 {0}，预期 {1}，本地化功能已降级
 	IconLoadFailed: 加载群系 [{0}] 的图标时失败: {1}
 	LoadReentry: 模组加载被重复调用，已跳过
 	InstanceNull: 未获取到 BTitles 主模组实例，自动发现功能已禁用
 	NewBiome: 新增群系: [{0}] → {1}
+	Prewarmed: 预热配色 {0} 个已有群系
 	ReflectCheckerNull: 反射获取检测函数字段失败
 	ReflectDictNull: 反射获取群系字典字段失败
 	ReflectInstanceNull: 反射获取主模组实例字段失败

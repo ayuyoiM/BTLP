@@ -97,15 +97,25 @@ namespace BTitlesLocalizationPatch.Scan
 							LocalizationScope = otherMod.Name
 						};
 
-						// 始终尝试加载图标，供 Hook 惰性采样
+						// 加载图标（供配色采样使用）
 						entry.Icon = BiomeStyleHelper.TryLoadIcon(modBiome);
 
-						// 自动上新群系配色（按开关）
+						// 自动上新群系配色（按开关）；关闭时若有图标也立即采样，避免运行时 GetData
 						if (enableStyling)
 						{
 							BiomeStyleHelper.GetTitleColors(modBiome, out Color tc, out Color sc);
 							entry.TitleColor = tc;
 							entry.StrokeColor = sc;
+						}
+						else if (entry.Icon != null)
+						{
+							// 运行时惰性采样前置到加载阶段
+							Color sampled = BiomeStyleHelper.SampleDominantColor(entry.Icon);
+							entry.TitleColor = sampled;
+							entry.StrokeColor = new Color(
+								(int)(sampled.R * 0.35f),
+								(int)(sampled.G * 0.35f),
+								(int)(sampled.B * 0.35f));
 						}
 
 						biomeDict[modBiome.Name] = entry;
@@ -140,6 +150,24 @@ namespace BTitlesLocalizationPatch.Scan
 				return "";
 			};
 			checkFuncs.Insert(0, _registeredCheckFunc);
+
+			// 预热已有群系颜色：BTitles 已有条目若有图标但无色，也在此补上，避免运行时采样
+			int prewarmed = 0;
+			foreach (var kvp in biomeDict)
+			{
+				if (kvp.Value.TitleColor == default && kvp.Value.Icon != null)
+				{
+					Color sampled = BiomeStyleHelper.SampleDominantColor(kvp.Value.Icon);
+					kvp.Value.TitleColor = sampled;
+					kvp.Value.StrokeColor = new Color(
+						(int)(sampled.R * 0.35f),
+						(int)(sampled.G * 0.35f),
+						(int)(sampled.B * 0.35f));
+					prewarmed++;
+				}
+			}
+			if (prewarmed > 0)
+				mod.Logger.Info(string.Format(L("Prewarmed"), prewarmed));
 
 			// 输出汇总：新增 + 更新 + 跳过 + 字典总数 + 函数数，一眼可验证总数匹配
 			mod.Logger.Info(string.Format(L("ScanSummary"),

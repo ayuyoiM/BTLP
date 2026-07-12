@@ -8,10 +8,12 @@ Logs: {
 	DictStats: Dictionary has {0} entries, {1} check functions
 	HookApplied: GetActualTitleName Detour patch applied successfully
 	HookGetTitleNameFailed: Failed to find BiomeTitlesUI.GetActualTitleName
+	HookSignatureMismatch: Hook signature mismatch: actual {0}, expected {1}, localization degraded
 	IconLoadFailed: Failed to load icon for biome [{0}]: {1}
 	LoadReentry: Mod Load called again, skipped
 	InstanceNull: Instance is null
 	NewBiome: New: {0} → {1}
+	Prewarmed: Pre-warmed colors for {0} existing biomes
 	ReflectCheckerNull: Failed to reflect BiomeCheckFunctions field
 	ReflectDictNull: Failed to reflect BiomeDictionary field
 	ReflectInstanceNull: Failed to reflect Instance field

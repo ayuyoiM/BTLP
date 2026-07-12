@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Terraria.Localization;
@@ -19,10 +18,6 @@ namespace BTitlesLocalizationPatch
 	*/
 	internal static class BiomeNameHook
 	{
-		// 颜色采样缓存：避免每次进出群系都 GetData 回读 GPU 纹理
-		private static readonly ConcurrentDictionary<string, Color> _sampledColors = new();
-
-		internal static void ClearColorCache() => _sampledColors.Clear();
 		public static string GetActualTitleNamePrefixHook(
 			Func<BiomeTitlesUI, BiomeEntry, string> orig,
 			BiomeTitlesUI self,
@@ -47,25 +42,9 @@ namespace BTitlesLocalizationPatch
 			Diagnostics.DebugLog.Info(
 				$"Biome: Key={biomeEntry.Key} Title={biomeEntry.Title} Scope={biomeEntry.LocalizationScope}");
 
-			// 惰性采样：有图标但颜色未设时从图标取色（首次采样后缓存，避免反复 GetData）
-			if (biomeEntry.TitleColor == default && biomeEntry.Icon != null)
+			// 回退配色：无图标也无颜色时用 HSL 色盘兜底（极少数边缘情况）
+			if (biomeEntry.TitleColor == default)
 			{
-				if (!_sampledColors.TryGetValue(key, out Color sampled))
-				{
-					sampled = BiomeStyleHelper.SampleDominantColor(biomeEntry.Icon);
-					_sampledColors[key] = sampled;
-				}
-				biomeEntry.TitleColor = sampled;
-				biomeEntry.StrokeColor = new Color(
-					(int)(sampled.R * 0.35f),
-					(int)(sampled.G * 0.35f),
-					(int)(sampled.B * 0.35f));
-				Diagnostics.DebugLog.Info(
-					$"LazySample: [{biomeEntry.Key}] → RGB({sampled.R},{sampled.G},{sampled.B})");
-			}
-			else if (biomeEntry.TitleColor == default)
-			{
-				// 无图标也无颜色 → HSL 色盘兜底
 				Color fallback = BiomeStyleHelper.GetFallbackColor(
 					biomeEntry.Key ?? biomeEntry.Title ?? "");
 				biomeEntry.TitleColor = fallback;
