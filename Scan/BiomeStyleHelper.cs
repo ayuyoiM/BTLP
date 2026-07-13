@@ -1,6 +1,7 @@
 using BTitlesLocalizationPatch.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Content;
 using System;
 using Terraria.Localization;
 using Terraria.ModLoader;
@@ -45,7 +46,7 @@ namespace BTitlesLocalizationPatch.Scan
             {
                 string path = biome.BestiaryIcon;
                 return !string.IsNullOrEmpty(path) && ModContent.HasAsset(path)
-                    ? ModContent.Request<Texture2D>(path).Value
+                    ? ModContent.Request<Texture2D>(path, AssetRequestMode.ImmediateLoad).Value
                     : null;
             }
             catch (Exception ex)
@@ -70,12 +71,14 @@ namespace BTitlesLocalizationPatch.Scan
             int h = icon.Height;
             if (w <= 1 || h <= 1)
                 return Color.White;
-
-            // 取中心区域避免边缘背景干扰
+            /*
+            取中心区域避免边缘背景干扰
+            安全限制：最大采样 4096 像素，防止恶意超大图标导致 OOM
+            */
             int startX = w / 4;
             int startY = h / 4;
-            int sampleW = Math.Max(1, w / 2);
-            int sampleH = Math.Max(1, h / 2);
+            int sampleW = Math.Min(Math.Max(1, w / 2), 256);
+            int sampleH = Math.Min(Math.Max(1, h / 2), 256);
 
             Color[] pixels = new Color[sampleW * sampleH];
             try
@@ -169,7 +172,7 @@ namespace BTitlesLocalizationPatch.Scan
 
         private static byte ClampByte(float value)
         {
-            int v = (int)Math.Round(value);
+            int v = (int)(value + 0.5f);  // 算术舍入，避免银行家舍入的不一致
             return (byte)(v < 0 ? 0 : (v > 255 ? 255 : v));
         }
     }

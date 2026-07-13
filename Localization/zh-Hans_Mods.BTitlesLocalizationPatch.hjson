@@ -3,6 +3,7 @@ ExtraTitles.Terraria.Aether: 以太
 Logs: {
 	ScanEnabled: 已启用扫描新群系，开始扫描……
 	CheckerNull: 未获取到群系检测函数列表，自动发现功能已禁用
+	ConfigNull: 未获取到配置实例，扫描已跳过
 	DetectionEx: 检测 [{0}] 模组的 [{1}] 群系时出错: {2}
 	DictNull: 未获取到群系字典，自动发现功能已禁用
 	DictStats: 群系字典共 {0} 项，检测函数共 {1} 个

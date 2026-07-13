@@ -142,7 +142,14 @@ namespace BTitlesLocalizationPatch
         {
             if (Main.dedServ) return;
 
+            // 防御：配置类可能为 null（极端情况下 ModContent.GetInstance 返回 null）
             var config = ModContent.GetInstance<BTitlesConfig>();
+            if (config == null)
+            {
+                Logger.Error(Language.GetTextValue(
+                    $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ConfigNull"));
+                return;
+            }
 
             if (config.EnableScan)
             {
@@ -171,6 +178,9 @@ namespace BTitlesLocalizationPatch
             Diagnostics.DebugLog.InfoWriter = s => { };
             Diagnostics.DebugLog.WarnWriter = s => { };
             Diagnostics.DebugLog.ErrorWriter = s => { };
+
+            // 重置调试日志缓存，防止热重载后 3 秒内读到旧缓存值
+            Diagnostics.DebugLog.ResetCache();
         }
     }
 }

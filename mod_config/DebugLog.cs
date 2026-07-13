@@ -12,12 +12,12 @@ namespace BTitlesLocalizationPatch.Diagnostics
         private static DateTime _lastConfigCheck = DateTime.MinValue;
         private static readonly TimeSpan ConfigCheckCooldown = TimeSpan.FromSeconds(3);
 
-        public static bool Enabled
+        // 重置缓存（Unload 时调用），防止热重载后残留旧值
+        internal static void ResetCache()
         {
-            get
-            {
-                DateTime now = DateTime.UtcNow;
-                if ((now - _lastConfigCheck) < ConfigCheckCooldown)
+            _cachedEnabled = false;
+            _lastConfigCheck = DateTime.MinValue;
+        }
                     return _cachedEnabled;
 
                 _lastConfigCheck = now;
@@ -29,30 +29,30 @@ namespace BTitlesLocalizationPatch.Diagnostics
                 {
                     _cachedEnabled = false;
                 }
-                return _cachedEnabled;
+return _cachedEnabled;
             }
         }
 
         // 三个级别的日志写入器，由 Mod 主类在 Load 时注入对应的 Logger 方法
         public static Action<string> InfoWriter { get; set; } = s => { };
-        public static Action<string> WarnWriter { get; set; } = s => { };
-        public static Action<string> ErrorWriter { get; set; } = s => { };
+public static Action<string> WarnWriter { get; set; } = s => { };
+public static Action<string> ErrorWriter { get; set; } = s => { };
 
-        // 输出调试日志（仅 Enabled 时生效）
-        public static void Info(string message)
-        {
-            if (Enabled)
-                InfoWriter?.Invoke(message);
-        }
+// 输出调试日志（仅 Enabled 时生效）
+public static void Info(string message)
+{
+    if (Enabled)
+        InfoWriter?.Invoke(message);
+}
 
-        public static void Warn(string message)
-        {
-            WarnWriter?.Invoke(message);
-        }
+public static void Warn(string message)
+{
+    WarnWriter?.Invoke(message);
+}
 
-        public static void Error(string message)
-        {
-            ErrorWriter?.Invoke(message);
-        }
+public static void Error(string message)
+{
+    ErrorWriter?.Invoke(message);
+}
     }
 }

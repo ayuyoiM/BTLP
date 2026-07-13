@@ -3,6 +3,7 @@ ExtraTitles.Terraria.Aether: Aether
 Logs: {
 	ScanEnabled: Biome auto-scan enabled, starting scan...
 	CheckerNull: BiomeCheckFunctions is null
+	ConfigNull: BTitlesConfig is null, scan skipped
 	DetectionEx: Exception detecting {0}.{1}: {2}
 	DictNull: BiomeDictionary is null
 	DictStats: Dictionary has {0} entries, {1} check functions
