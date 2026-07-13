@@ -1,17 +1,11 @@
 V1.1.9
 修复
-  - PostSetupContent 缺少 config null 检查：新增判空 + 日志 + early return，极端情况下不再 NPE
-  - 步2 自动生成名拦截步3/4：新增 result != biomeEntry.Title 检查，非显式翻译不截胡后续回退
-  - TryLoadIcon 异步死锁：ModContent.Request 改 ImmediateLoad，避免 PostSetupContent 阶段因主线程回调阻塞导致图标加载失败
-  - TitleColor == default 死代码：加 Icon == null 前置条件，让无图标无色群系能正确触发 HSL 兜底配色
-  - _registeredCheckFunc 多线程可见性：加 volatile，防止热重载 Cleanup 读到过期 null 值残留 lambda
-  - DebugLog 热重载缓存残留：Unload 时调用 ResetCache 清空计时，避免重载后 3 秒读到旧缓存
-  - preScanKeys 快照安全性：显式传入 biomeDict.Comparer，防止并发修改导致回滚失真
+  - 部分模组的群系图标不显示的问题
+  - 开启调试日志后反复重载模组可能导致的异常
+  - 某些极端情况下配置异常导致游戏崩溃的问题
+  - 非中文环境下群系名显示异常的问题
+  - 部分群系标题颜色显示不正常的问题
 改进
-  - 翻译回退提取为局部函数 TryLocalized：三份重复代码集中一处，降低维护风险
-  - 进出群系日志增加图标状态：Icon=✓(30x30) / Icon=✗(null)，方便排查图标加载问题
-  - SampleDominantColor 增加尺寸上限 64×64（4096 像素），防止恶意超大图标 OOM
-  - ClampByte 改用算术舍入，避免银行家舍入在边界值的不一致
-  - 移除 BiomeRegistrar 冗余 mapKey 变量和 #if DEBUG 二次扫描代码
-  - BiomeNameHook 新增 #nullable enable 启用可空引用类型检查
-  - 新增 ConfigNull 本地化键（中/英），配置获取失败时有明确日志
+  - 改进调试日志输出，新增图标状态信息，方便排查问题
+  - 优化内部代码结构，减少不必要的性能开销
+  - 优化热重载时的稳定性和安全性
