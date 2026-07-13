@@ -1,6 +1,17 @@
-V1.1.8
+V1.1.9
 修复
-  - 跨模组同名群系冲突：字典 Key 改为 {Mod}.{BiomeName} 命名空间格式，不同模组的同名 ModBiome 不再互相覆盖
-  - 扫描中途异常残留脏数据：新增 preScanKeys 快照 + try-catch 回滚机制，异常时自动清理本次新增的字典条目
-  - 本地化键值为空时显示空白标题：步骤 2/3/4 增加 string.IsNullOrEmpty 检查，空值继续走回退链而非直接返回
-  - DebugLog.Enabled 高频查询 ModContent.GetInstance：增加 3 秒缓存冷却，避免 UI 渲染路径重复反射调用
+  - PostSetupContent 缺少 config null 检查：新增判空 + 日志 + early return，极端情况下不再 NPE
+  - 步2 自动生成名拦截步3/4：新增 result != biomeEntry.Title 检查，非显式翻译不截胡后续回退
+  - TryLoadIcon 异步死锁：ModContent.Request 改 ImmediateLoad，避免 PostSetupContent 阶段因主线程回调阻塞导致图标加载失败
+  - TitleColor == default 死代码：加 Icon == null 前置条件，让无图标无色群系能正确触发 HSL 兜底配色
+  - _registeredCheckFunc 多线程可见性：加 volatile，防止热重载 Cleanup 读到过期 null 值残留 lambda
+  - DebugLog 热重载缓存残留：Unload 时调用 ResetCache 清空计时，避免重载后 3 秒读到旧缓存
+  - preScanKeys 快照安全性：显式传入 biomeDict.Comparer，防止并发修改导致回滚失真
+改进
+  - 翻译回退提取为局部函数 TryLocalized：三份重复代码集中一处，降低维护风险
+  - 进出群系日志增加图标状态：Icon=✓(30x30) / Icon=✗(null)，方便排查图标加载问题
+  - SampleDominantColor 增加尺寸上限 64×64（4096 像素），防止恶意超大图标 OOM
+  - ClampByte 改用算术舍入，避免银行家舍入在边界值的不一致
+  - 移除 BiomeRegistrar 冗余 mapKey 变量和 #if DEBUG 二次扫描代码
+  - BiomeNameHook 新增 #nullable enable 启用可空引用类型检查
+  - 新增 ConfigNull 本地化键（中/英），配置获取失败时有明确日志
