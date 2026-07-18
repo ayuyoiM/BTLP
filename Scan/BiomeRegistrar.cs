@@ -1,3 +1,4 @@
+#nullable enable
 using BTitles;
 using BTitlesLocalizationPatch.Diagnostics;
 using Microsoft.Xna.Framework;
@@ -11,246 +12,247 @@ using Terraria.ModLoader;
 
 namespace BTitlesLocalizationPatch.Scan
 {
-    /*
-	PostSetupContent 自动发现与注册逻辑
-	- 扫描所有已加载模组的 ModBiome
-	- 已收录的只更新 DisplayName，不动颜色/图标（以内置为主）
-	- 未收录的注册到 BTitles 字典，按开关决定配色+图标
-	- 注册唯一检测函数（Insert(0)到 BiomeCheckFunctions 最前面）
-	- 走 tModLoader 原生 IsBiomeActive，大小群系通吃
-	*/
     internal static class BiomeRegistrar
     {
-        // 保存注册的检测函数引用，供 Unload 时移除
-        // volatile：PostSetupContent（TP Worker 线程）写入，Unload（主线程）读取
-        private static volatile Func<Player, string> _registeredCheckFunc;
+        // volatile: 后台线程（PostSetupContent）写入，主线程（Unload/配置变更）读取
+        internal static volatile Func<Player, string>? RegisteredCheckFunc;
+        internal static volatile List<(string DictKey, ModBiome Biome)>? ScannedBiomes;
+
+        // 扫描前 BiomeDictionary 的快照，用于区分新增和已有条目（回滚、热卸载）
+        internal static HashSet<string>? PreScanKeys;
+
+        // ── 入口
 
         public static void Run(Mod mod, bool enableStyling)
         {
-            // 双重保险：先清理上次可能残留的委托，再注册新的
-            Cleanup();
+            ScanLifecycle.Cleanup();
+            ScannedBiomes = null;
+            var biomes = new List<(string DictKey, ModBiome Biome)>();
 
-            string L(string key) => Language.GetTextValue(
-                $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{key}");
+            var instance = ResolveBTitlesInstance(mod);
+            if (instance == null) return;
+            var biomeDict = ResolveBiomeDictionary(instance, mod);
+            if (biomeDict == null) return;
+            var checkFuncs = ResolveCheckFunctions(instance, mod);
+            if (checkFuncs == null) return;
 
-            var instance = BTitlesLocalizationPatch.InstanceField?.GetValue(null);
-            if (instance == null) { mod.Logger.Error(L("InstanceNull")); return; }
+            // 复制到新 HashSet 避免扫描期间外部修改导致快照失真
+            PreScanKeys = new HashSet<string>(biomeDict.Keys, biomeDict.Comparer);
 
-            var biomeDict = BTitlesLocalizationPatch.BiomeDictField?.GetValue(instance)
-                as Dictionary<string, BiomeEntry>;
-            if (biomeDict == null) { mod.Logger.Error(L("DictNull")); return; }
+            var result = ScanAllModBiomes(mod, biomeDict, enableStyling, biomes);
+            if (result == null) return;
 
-            var checkFuncs = BTitlesLocalizationPatch.CheckFuncsField?.GetValue(instance)
-                as List<Func<Player, string>>;
-            if (checkFuncs == null) { mod.Logger.Error(L("CheckerNull")); return; }
+            RegisteredCheckFunc = BuildDetectionFunction(result.AllBiomes, result.KeyMapping);
+            checkFuncs.Insert(0, RegisteredCheckFunc);
+            ScannedBiomes = biomes;
 
-            mod.Logger.Info(string.Format(L("DictStats"), biomeDict.Count, checkFuncs.Count));
+            mod.Logger.Info(SafeFormat(Tr("ScanSummary"),
+                result.Added, result.Updated, result.Skipped,
+                biomeDict.Count, checkFuncs.Count));
+        }
 
-            // 记录扫描前的字典 Key 快照，用于异常回滚
-            // 防御：复制到新 HashSet，防止外部在扫描期间修改 biomeDict 导致快照失真
-            var preScanKeys = new HashSet<string>(biomeDict.Keys, biomeDict.Comparer);
+        // ── 反射辅助
 
-            int added = 0;          // 新增群系数
-            int updated = 0;        // 更新标题数
-            int skipped = 0;        // 占位群系跳过数
+        private static BiomeTitlesMod? ResolveBTitlesInstance(Mod mod)
+        {
+            var instance = BTitlesLocalizationPatch.InstanceField?.GetValue(null) as BiomeTitlesMod;
+            if (instance == null) mod.Logger.Error(Tr("InstanceNull"));
+            return instance;
+        }
 
-            // 收集所有模组的 ModBiome 缓存，供注册字典和检测函数共用
-            var allModBiomes = new List<(Mod Mod, ModBiome Biome)>();
+        private static Dictionary<string, BiomeEntry>? ResolveBiomeDictionary(BiomeTitlesMod instance, Mod mod)
+        {
+            var dict = BTitlesLocalizationPatch.BiomeDictField?.GetValue(instance) as Dictionary<string, BiomeEntry>;
+            if (dict == null) mod.Logger.Error(Tr("DictNull"));
+            return dict;
+        }
 
-            // 记录每个群系使用的字典 Key 格式，供检测函数返回正确的键名
-            // Key = "{Mod}.{BiomeName}"，Value = 字典中实际使用的 Key（命名空间键或短键）
-            var biomeToDictKey = new Dictionary<string, string>();
+        private static List<Func<Player, string>>? ResolveCheckFunctions(BiomeTitlesMod instance, Mod mod)
+        {
+            var list = BTitlesLocalizationPatch.CheckFuncsField?.GetValue(instance) as List<Func<Player, string>>;
+            if (list == null) mod.Logger.Error(Tr("CheckerNull"));
+            return list;
+        }
+
+        // ── 核心扫描
+
+        private static ScanResult? ScanAllModBiomes(
+            Mod mod, Dictionary<string, BiomeEntry> biomeDict, bool enableStyling,
+            List<(string DictKey, ModBiome Biome)> scannedBiomes)
+        {
+            int added = 0, updated = 0, skipped = 0;
+            var allBiomes = new List<(Mod Mod, ModBiome Biome)>();
+            var keyMapping = new Dictionary<string, string>();
 
             try
             {
-                foreach (Mod otherMod in ModLoader.Mods)
+                foreach (Mod targetMod in ModLoader.Mods)
                 {
-                    if (otherMod.Name == "BTitles" || otherMod.Name == "tModLoader" || otherMod.Name == "ModLoader")
+                    if (targetMod.Name is "BTitles" or "tModLoader" or "ModLoader")
                         continue;
 
-                    var modBiomes = otherMod.GetContent<ModBiome>().ToArray();
+                    var modBiomes = targetMod.GetContent<ModBiome>().ToArray();
                     if (modBiomes.Length == 0) continue;
 
-                    mod.Logger.Info(string.Format(L("ScanningMod"), otherMod.Name, modBiomes.Length));
+                    mod.Logger.Info(SafeFormat(Tr("ScanningMod"), targetMod.Name, modBiomes.Length));
 
-                    foreach (var modBiome in modBiomes)
+                    foreach (var biome in modBiomes)
                     {
-                        // 跳过没有重写 IsBiomeActive 的占位群系（如嘉登实验室），注册了也检测不到
-                        // 用 DeclaringType 判断：子类没重写时 DeclaringType 仍是 ModBiome
-                        // 注意：不用 GetBaseDefinition()，因 fgpt 等模组的 ILHook 会干扰其行为
-                        var isBiomeActiveMethod = modBiome.GetType().GetMethod(
-                            "IsBiomeActive", BindingFlags.Public | BindingFlags.Instance);
-                        if (isBiomeActiveMethod != null &&
-                            isBiomeActiveMethod.DeclaringType == typeof(ModBiome))
+                        // 没重写 IsBiomeActive 的占位群系（如嘉登实验室）注册了也检测不到
+                        if (IsPlaceholderBiome(biome))
                         {
-                            mod.Logger.Info(string.Format(L("SkippedPlaceholder"),
-                                modBiome.Name, modBiome.DisplayName.Value));
+                            mod.Logger.Info(SafeFormat(Tr("SkippedPlaceholder"), biome.Name, biome.DisplayName.Value));
                             skipped++;
                             continue;
                         }
 
-                        allModBiomes.Add((otherMod, modBiome));
-
-                        // 使用 "{模组名}.{群系类名}" 作为命名空间键，防止不同模组的同名群系互相覆盖
-                        // 同时保留对 BTitles 短键（原版 modBiome.Name）的兼容查找
-                        string namespacedKey = $"{otherMod.Name}.{modBiome.Name}";
-
-                        if (biomeDict.TryGetValue(namespacedKey, out var existing))
-                        {
-                            // 已收录（命名空间键）：之前扫描注册的，更新标题和本地化作用域
-                            biomeToDictKey[namespacedKey] = namespacedKey;
-                            existing.Title = modBiome.DisplayName.Value;
-                            existing.LocalizationScope = otherMod.Name;
-                            updated++;
-                        }
-                        else if (biomeDict.TryGetValue(modBiome.Name, out existing))
-                        {
-                            // 已收录（BTitles 短键）：同样更新，检测函数返回短键供 BTitles 查找
-                            biomeToDictKey[namespacedKey] = modBiome.Name;
-                            existing.Title = modBiome.DisplayName.Value;
-                            existing.LocalizationScope = otherMod.Name;
-                            updated++;
-                        }
-                        else
-                        {
-                            var entry = new BiomeEntry
-                            {
-                                Key = modBiome.Name,
-                                Title = modBiome.DisplayName.Value,
-                                SubTitle = otherMod.DisplayNameClean,
-                                LocalizationScope = otherMod.Name
-                            };
-
-                            // 加载图标（供配色采样使用）
-                            entry.Icon = BiomeStyleHelper.TryLoadIcon(modBiome);
-
-                            // 自动上新群系配色（按开关）；关闭时若有图标也立即采样，避免运行时 GetData
-                            if (enableStyling)
-                            {
-                                BiomeStyleHelper.GetTitleColors(modBiome, out Color tc, out Color sc);
-                                entry.TitleColor = tc;
-                                entry.StrokeColor = sc;
-                            }
-                            else if (entry.Icon != null)
-                            {
-                                // 运行时惰性采样前置到加载阶段
-                                Color sampled = BiomeStyleHelper.SampleDominantColor(entry.Icon);
-                                entry.TitleColor = sampled;
-                                entry.StrokeColor = new Color(
-                                    (int)(sampled.R * 0.35f),
-                                    (int)(sampled.G * 0.35f),
-                                    (int)(sampled.B * 0.35f));
-                            }
-
-                            biomeToDictKey[namespacedKey] = namespacedKey;
-                            biomeDict[namespacedKey] = entry;
-                            added++;
-                            mod.Logger.Info(string.Format(L("NewBiome"), modBiome.Name, modBiome.DisplayName.Value));
-                        }
+                        allBiomes.Add((targetMod, biome));
+                        RegisterOrUpdateBiome(biomeDict, targetMod, biome, enableStyling, keyMapping, scannedBiomes, mod, ref added, ref updated);
                     }
                 }
             }
             catch (Exception ex)
             {
-                // 扫描中途异常：回滚本次新增的字典条目，防止残留脏数据
-                mod.Logger.Error($"Biome scan failed with exception, rolling back: {ex.Message}");
-#if DEBUG
-                DebugLog.Warn($"Scan rollback stack trace: {ex.StackTrace}");
-#endif
-
-                var keysToRemove = biomeDict.Keys
-                    .Where(k => !preScanKeys.Contains(k))
-                    .ToList();
-                foreach (var key in keysToRemove)
-                    biomeDict.Remove(key);
-
-                // 确保不残留检测函数引用
-                _registeredCheckFunc = null;
-
-                // 已修改的条目（预存键）不做回滚——只改了 Title/Scope，无结构损坏
-                return;
+                mod.Logger.Error($"Biome scan failed, rolling back: {ex.Message}");
+                Rollback(biomeDict);
+                return null;
             }
 
-            /*
-            注册一个统一的检测函数，插到 BiomeCheckFunctions 最前面
-            走 tModLoader 原生 ModBiome.IsBiomeActive，大小群系都能正确识别
-            */
-            _registeredCheckFunc = player =>
+            return new ScanResult(added, updated, skipped, allBiomes, keyMapping);
+        }
+
+        /*
+        用 DeclaringType 而非 GetBaseDefinition() 判断：
+        fgpt 等模组的 ILHook 会干扰 GetBaseDefinition 的行为
+        */
+        private static bool IsPlaceholderBiome(ModBiome modBiome)
+        {
+            var method = modBiome.GetType().GetMethod("IsBiomeActive", BindingFlags.Public | BindingFlags.Instance);
+            return method != null && method.DeclaringType == typeof(ModBiome);
+        }
+
+        /*
+        优先匹配命名空间键 "{模组}.{类名}" 避免同名冲突
+        再试 BTitles 短键兼容已有条目
+        已有条目不动颜色/图标——BTitles 或之前扫描已有配色
+        */
+        private static void RegisterOrUpdateBiome(
+            Dictionary<string, BiomeEntry> biomeDict, Mod targetMod, ModBiome modBiome, bool enableStyling,
+            Dictionary<string, string> keyMapping,
+            List<(string DictKey, ModBiome Biome)> scannedBiomes,
+            Mod mod, ref int added, ref int updated)
+        {
+            string namespacedKey = $"{targetMod.Name}.{modBiome.Name}";
+
+            if (biomeDict.TryGetValue(namespacedKey, out var entry))
             {
-                foreach (var (otherMod, mb) in allModBiomes)
+                entry.Title = modBiome.DisplayName.Value ?? modBiome.Name;
+                entry.LocalizationScope = targetMod.Name;
+                keyMapping[namespacedKey] = namespacedKey;
+                scannedBiomes.Add((namespacedKey, modBiome));
+                updated++;
+            }
+            else if (biomeDict.TryGetValue(modBiome.Name, out entry))
+            {
+                entry.Title = modBiome.DisplayName.Value ?? modBiome.Name;
+                entry.LocalizationScope = targetMod.Name;
+                keyMapping[namespacedKey] = modBiome.Name;
+                scannedBiomes.Add((modBiome.Name, modBiome));
+                updated++;
+            }
+            else
+            {
+                var newEntry = BuildNewEntry(modBiome, targetMod, enableStyling);
+                keyMapping[namespacedKey] = namespacedKey;
+                biomeDict[namespacedKey] = newEntry;
+                scannedBiomes.Add((namespacedKey, modBiome));
+                added++;
+                mod.Logger.Info(SafeFormat(Tr("NewBiome"), modBiome.Name, modBiome.DisplayName.Value));
+            }
+        }
+
+        private static BiomeEntry BuildNewEntry(ModBiome modBiome, Mod targetMod, bool enableStyling)
+        {
+            var entry = new BiomeEntry
+            {
+                Key = modBiome.Name,
+                Title = modBiome.DisplayName.Value ?? modBiome.Name,
+                SubTitle = targetMod.DisplayNameClean,
+                LocalizationScope = targetMod.Name,
+                Icon = BiomeStyleHelper.TryLoadIcon(modBiome),
+            };
+
+            if (enableStyling)
+            {
+                BiomeStyleHelper.GetTitleColors(modBiome, out Color titleColor, out Color strokeColor);
+                entry.TitleColor = titleColor;
+                entry.StrokeColor = strokeColor;
+            }
+            else
+            {
+                entry.TitleColor = Color.White;
+                entry.StrokeColor = Color.Black;
+            }
+
+            return entry;
+        }
+
+        // ── 检测函数
+
+        private static Func<Player, string> BuildDetectionFunction(
+            List<(Mod Mod, ModBiome Biome)> allBiomes, Dictionary<string, string> keyMapping)
+        {
+            return player =>
+            {
+                foreach (var (sourceMod, biome) in allBiomes)
                 {
                     try
                     {
-                        if (mb.IsBiomeActive(player))
-                        {
-                            return biomeToDictKey.TryGetValue($"{otherMod.Name}.{mb.Name}", out var dictKey) ? dictKey : mb.Name;
-                        }
+                        if (biome.IsBiomeActive(player))
+                            return keyMapping.TryGetValue($"{sourceMod.Name}.{biome.Name}", out var key)
+                                ? key : biome.Name;
                     }
                     catch (Exception ex)
                     {
-                        // 单个群系检测异常，不影响其他群系
-                        DebugLog.Warn(string.Format(L("DetectionEx"), otherMod.Name, mb.Name, ex.Message));
-#if DEBUG
-                        DebugLog.Warn($"StackTrace: {ex.StackTrace}");
-#endif
+                        DebugLog.Warn(SafeFormat(Tr("DetectionEx"), sourceMod.Name, biome.Name, ex.Message));
                     }
                 }
                 return "";
             };
-            checkFuncs.Insert(0, _registeredCheckFunc);
-
-            // 预热已有群系颜色：BTitles 已有条目若有图标但无色，也在此补上，避免运行时采样
-            int prewarmed = 0;
-            foreach (var kvp in biomeDict)
-            {
-                if (kvp.Value.TitleColor == default && kvp.Value.Icon != null)
-                {
-                    Color sampled = BiomeStyleHelper.SampleDominantColor(kvp.Value.Icon);
-                    kvp.Value.TitleColor = sampled;
-                    kvp.Value.StrokeColor = new Color(
-                        (int)(sampled.R * 0.35f),
-                        (int)(sampled.G * 0.35f),
-                        (int)(sampled.B * 0.35f));
-                    prewarmed++;
-                }
-            }
-            if (prewarmed > 0)
-                mod.Logger.Info(string.Format(L("Prewarmed"), prewarmed));
-
-            // 输出汇总：新增 + 更新 + 跳过 + 字典总数 + 函数数，一眼可验证总数匹配
-            mod.Logger.Info(string.Format(L("ScanSummary"),
-                added, updated, skipped, biomeDict.Count, checkFuncs.Count));
         }
 
-        /*
-        清理注册的检测函数，在 Unload 时从 BTitles 的 BiomeCheckFunctions 列表中移除
-        防止热重载时重复累积 lambda，导致无效的额外检测调用
-        */
-        public static void Cleanup()
+        // ── 回滚
+
+        private static void Rollback(Dictionary<string, BiomeEntry> biomeDict)
         {
-            if (_registeredCheckFunc == null) return;
+            var addedKeys = PreScanKeys != null
+                ? biomeDict.Keys.Where(k => !PreScanKeys.Contains(k)).ToList()
+                : new List<string>();
+            foreach (var key in addedKeys)
+                biomeDict.Remove(key);
 
-            try
-            {
-                var instance = BTitlesLocalizationPatch.InstanceField?.GetValue(null);
-                if (instance == null) return;
-
-                var checkFuncs = BTitlesLocalizationPatch.CheckFuncsField?.GetValue(instance)
-                    as List<Func<Player, string>>;
-                if (checkFuncs == null) return;
-
-                checkFuncs.Remove(_registeredCheckFunc);
-            }
-            catch (Exception ex)
-            {
-                // 如果有一天 BTitles 突然复活更新了，这条日志会告诉我们需要改什么
-                Diagnostics.DebugLog.Warn($"Cleanup: failed to remove check func - {ex.Message}");
-            }
-            finally
-            {
-                // 确保引用一定被释放，即使反射或移除操作抛异常
-                _registeredCheckFunc = null;
-            }
+            RegisteredCheckFunc = null;
+            ScannedBiomes = null;
+            PreScanKeys = null;
         }
+
+        // ── 本地化辅助
+
+        private static string Tr(string key) =>
+            Language.GetTextValue($"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{key}");
+
+        // HJSON 本地化值可能含有未转义 { } 导致 FormatException，兜底返回原模板
+        private static string SafeFormat(string format, params object[] args)
+        {
+            try { return string.Format(format, args); }
+            catch (FormatException) { return format; }
+        }
+
+        // ── 内部数据传输
+
+        private sealed record ScanResult(
+            int Added, int Updated, int Skipped,
+            List<(Mod Mod, ModBiome Biome)> AllBiomes,
+            Dictionary<string, string> KeyMapping);
     }
 }

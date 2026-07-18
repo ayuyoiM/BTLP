@@ -12,28 +12,31 @@ namespace BTitlesLocalizationPatch.Scan
     internal static class BiomeStyleHelper
     {
         // 自动取色策略：BackgroundColor → 哈希色 → 白色回退
-        public static void GetTitleColors(ModBiome biome, out Color title, out Color stroke)
+        public static void GetTitleColors(ModBiome biome, out Color titleColor, out Color strokeColor)
         {
+            // 外部调用可能传来 null，防御到结果级别
+            if (biome == null)
+            {
+                titleColor = Color.White;
+                strokeColor = Color.Black;
+                return;
+            }
+
             if (biome.BackgroundColor.HasValue)
             {
-                title = biome.BackgroundColor.Value;
+                titleColor = biome.BackgroundColor.Value;
             }
             else
             {
-                /*
-				HSL 色盘兜底
-				用 FNV-1a 取色相 (0-360)，固定饱和度 50%，亮度 60%
-				比纯哈希颜色更饱满悦目，且确定不变
-				*/
+                // HSL 色盘兜底：FNV-1a 取色相 (0-360)，固定饱和度 50%，亮度 60%
                 uint hash = Fnv1aHash(biome.FullName);
-                title = HslToRgb((hash % 3600) / 10f, 0.5f, 0.6f);
+                titleColor = HslToRgb((hash % 3600) / 10f, 0.5f, 0.6f);
             }
 
-            // 描边取标题的暗化版
-            stroke = new Color(
-                (int)(title.R * 0.35f),
-                (int)(title.G * 0.35f),
-                (int)(title.B * 0.35f));
+            strokeColor = new Color(
+                (int)(titleColor.R * 0.35f),
+                (int)(titleColor.G * 0.35f),
+                (int)(titleColor.B * 0.35f));
         }
 
         /*
@@ -42,6 +45,9 @@ namespace BTitlesLocalizationPatch.Scan
 		*/
         public static Texture2D TryLoadIcon(ModBiome biome)
         {
+            if (biome == null)
+                return null;
+
             try
             {
                 string path = biome.BestiaryIcon;
@@ -56,68 +62,6 @@ namespace BTitlesLocalizationPatch.Scan
                     biome.FullName, ex.Message));
                 return null;
             }
-        }
-
-        /*
-		从图标采样主色调
-		取中心 1/2 区域的像素加权平均，忽略透明/过暗/过亮的像素
-		*/
-        public static Color SampleDominantColor(Texture2D icon)
-        {
-            if (icon == null || icon.IsDisposed)
-                return Color.White;
-
-            int w = icon.Width;
-            int h = icon.Height;
-            if (w <= 1 || h <= 1)
-                return Color.White;
-            /*
-            取中心区域避免边缘背景干扰
-            安全限制：最大采样 4096 像素，防止恶意超大图标导致 OOM
-            */
-            int startX = w / 4;
-            int startY = h / 4;
-            int sampleW = Math.Min(Math.Max(1, w / 2), 256);
-            int sampleH = Math.Min(Math.Max(1, h / 2), 256);
-
-            Color[] pixels = new Color[sampleW * sampleH];
-            try
-            {
-                icon.GetData(0, new Rectangle(startX, startY, sampleW, sampleH), pixels, 0, pixels.Length);
-            }
-            catch
-            {
-                return Color.White;
-            }
-
-            long r = 0, g = 0, b = 0, count = 0;
-            foreach (ref Color pixel in pixels.AsSpan())
-            {
-                if (pixel.A < 128) continue;
-                int brightness = pixel.R + pixel.G + pixel.B;
-                if (brightness < 30 || brightness > 720) continue;
-
-                r += pixel.R;
-                g += pixel.G;
-                b += pixel.B;
-                count++;
-            }
-
-            if (count == 0)
-            {
-                // 全被过滤了，取第一个不透明的像素
-                foreach (ref Color pixel in pixels.AsSpan())
-                {
-                    if (pixel.A >= 128)
-                        return pixel;
-                }
-                return Color.Gray;
-            }
-
-            return new Color(
-                (byte)(r / count),
-                (byte)(g / count),
-                (byte)(b / count));
         }
 
         /*

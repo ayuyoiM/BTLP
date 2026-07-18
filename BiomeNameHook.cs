@@ -3,147 +3,216 @@ using BTitles;
 using BTitlesLocalizationPatch.Scan;
 using Microsoft.Xna.Framework;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Terraria.Localization;
 
 namespace BTitlesLocalizationPatch
 {
-    /*
-    GetActualTitleName 的替换逻辑
-    5 步回退链，命中即返回
-    1. 用户自定义改名          → Config.CustomBiomeNames
-    2. 源模组本地化            → Mods.{Scope}.Biomes.{Key}.DisplayName（跳过原版 Terraria）
-    3. BTitles 自身翻译        → Mods.BiomeTitles.Title.{Scope}.{Key}
-    4. 补丁模组补充翻译        → Mods.BTitlesLocalizationPatch.ExtraTitles.{Scope}.{Key}
-    5. 回退原始 Title          → biomeEntry.Title
-    */
     internal static class BiomeNameHook
     {
+        // 只缓存不受 BTitles 配置影响的翻译链结果（步骤 1-3/5）
+        // 自定义覆盖（步骤 4）每次重新查配置，保证配置变更即时生效
+        internal static readonly ConcurrentDictionary<string, (string Text, string Tag)> TranslationCache = new();
+        private static volatile string _lastCultureName = "";
+
         public static string GetActualTitleNamePrefixHook(
             Func<BiomeTitlesUI, BiomeEntry, string> orig,
             BiomeTitlesUI self,
-            BiomeEntry biomeEntry
-        )
+            BiomeEntry biomeEntry)
         {
-            // 防止空引用（外部模组调用时参数可能异常）
             if (self == null || biomeEntry == null)
                 return "";
-
-            // 防御：Hook 未正确安装时静默降级，不抛异常
             if (!BTitlesLocalizationPatch.HookInstalled)
-                return biomeEntry.Title;
+                return biomeEntry.Title ?? "";
 
-            // 防御：Config 可能为 null（BTitles 版本变更或未初始化）
             var config = self.Config;
-
-            // 预清理 Key 中的空格，供本地化键名拼接使用
             string key = biomeEntry.Key ?? "";
             string sanitizedKey = key.Replace(" ", "_");
+            string safeScope = (biomeEntry.LocalizationScope ?? "").Replace(".", "_");
+            bool hasValidKey = !string.IsNullOrEmpty(sanitizedKey);
 
-            // 进出群系时日志输出，方便排查注册/显示问题
-            string iconInfo =
-                biomeEntry.Icon != null
-                    ? $"Icon=✓({biomeEntry.Icon.Width}x{biomeEntry.Icon.Height})"
-                    : "Icon=✗(null)";
-            Diagnostics.DebugLog.Info(
-                $"Biome: Key={biomeEntry.Key} Title={biomeEntry.Title} Scope={biomeEntry.LocalizationScope} {iconInfo}"
-            );
+            string cacheKey = $"{safeScope}|{sanitizedKey}";
+            string currentCulture = Language.ActiveCulture.Name;
 
-            // 回退配色：无图标且 TitleColor 为透明（default）时用 HSL 色盘兜底
-            // 防御：BiomeEntry 初始化后 TitleColor 默认为 Color.White，仅对显式设为透明的条目生效
+            // 语言变更时清空缓存
+            if (_lastCultureName != currentCulture)
+            {
+                _lastCultureName = currentCulture;
+                TranslationCache.Clear();
+            }
+
+            // 缓存命中：从基础翻译查自定义覆盖
+            if (hasValidKey && TranslationCache.TryGetValue(cacheKey, out var cached))
+            {
+                string displayName = ApplyCustomOverride(cached.Text, config) ?? cached.Text;
+                string tag = displayName == cached.Text ? cached.Tag : "CustomName";
+                LogBiomeEntry(biomeEntry.Key ?? "", displayName, biomeEntry, tag);
+                return displayName;
+            }
+
+            // 回退配色：无图标且 TitleColor 透明时用 HSL 色盘
             if (biomeEntry.Icon == null && biomeEntry.TitleColor == default)
             {
-                Color fallback = BiomeStyleHelper.GetFallbackColor(
-                    biomeEntry.Key ?? biomeEntry.Title ?? ""
-                );
+                Color fallback = BiomeStyleHelper.GetFallbackColor(biomeEntry.Key ?? biomeEntry.Title ?? "");
                 biomeEntry.TitleColor = fallback;
-                biomeEntry.StrokeColor = new Color(
-                    (int)(fallback.R * 0.35f),
-                    (int)(fallback.G * 0.35f),
-                    (int)(fallback.B * 0.35f)
-                );
-                Diagnostics.DebugLog.Info(
-                    $"Fallback: [{biomeEntry.Key}] → ({fallback.R},{fallback.G},{fallback.B})"
-                );
+                biomeEntry.StrokeColor = new Color((int)(fallback.R * 0.35f), (int)(fallback.G * 0.35f), (int)(fallback.B * 0.35f));
+                Diagnostics.DebugLog.Info(Language.GetTextValue(
+                    $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.FallbackColor",
+                    biomeEntry.Key ?? "", fallback.R, fallback.G, fallback.B));
             }
 
-            /*
-            翻译回退辅助：查询本地化键，非空时应用自定义改名
-            三个回退步骤（源模组本地化/BTitles 翻译/补丁补充翻译）共用同一逻辑
-            提取为局部函数集中一处：
-            - 避免三份重复代码同步修改的维护风险
-            - 非防御性编码，仅为结构化重构，零运行时开销
-            */
-            string? TryLocalized(string locKey)
+            // 翻译回退链：先命中者胜出
+            string? baseText = null;
+            string? baseTag = null;
+
+            // 1. 源模组本地化
+            if (hasValidKey && currentCulture != "en-US")
+                (baseText, baseTag) = TryStep1(sanitizedKey, safeScope, biomeEntry.LocalizationScope);
+
+            // 2. BTitles 自身翻译
+            if (baseText == null && hasValidKey && currentCulture != "en-US")
+                (baseText, baseTag) = TryLocalizedSteps("BTitles",
+                    $"Mods.BiomeTitles.Title.{safeScope}.{sanitizedKey}");
+
+            // 3. 补丁模组补充翻译
+            if (baseText == null && hasValidKey && currentCulture != "en-US")
+                (baseText, baseTag) = TryLocalizedSteps("ExtraTitles",
+                    $"Mods.{nameof(BTitlesLocalizationPatch)}.ExtraTitles.{safeScope}.{sanitizedKey}");
+
+            // 4. 自定义覆盖
+            string? overridden = baseText != null ? ApplyCustomOverride(baseText, config) : null;
+            if (overridden != null)
             {
-                if (Language.Exists(locKey))
+                // 基础翻译仍缓存，下次重新检查配置
+                if (hasValidKey && baseText != null)
+                    TranslationCache[cacheKey] = (baseText, baseTag ?? "Unknown");
+                LogBiomeEntry(biomeEntry.Key ?? "", overridden, biomeEntry, "CustomName");
+                return overridden;
+            }
+            if (baseText != null)
+            {
+                LogAndCache(biomeEntry, cacheKey, hasValidKey, baseText, baseTag ?? "Unknown");
+                return baseText;
+            }
+
+            // 英文环境 / 链全未命中：用原始标题匹配自定义覆盖
+            if (config != null)
+            {
+                string title = biomeEntry.Title ?? "";
+                var match = config.CustomBiomeNames?.FirstOrDefault(n => n.CurrentName == title);
+                if (match != null)
                 {
-                    string translatedName = Language.GetTextValue(locKey);
-
-                    // 防御：本地化键存在但值为空时继续回退，避免界面显示空白
-                    if (!string.IsNullOrEmpty(translatedName))
-                    {
-                        // 对翻译结果再应用一次自定义改名（config 可能为 null）
-                        return config
-                                ?.CustomBiomeNames?.FirstOrDefault(n =>
-                                    n.CurrentName == translatedName
-                                )
-                                ?.NewName
-                            ?? translatedName;
-                    }
+                    if (hasValidKey) TranslationCache[cacheKey] = (title, "Fallback");
+                    LogBiomeEntry(biomeEntry.Key ?? "", match.NewName, biomeEntry, "CustomName");
+                    return match.NewName;
                 }
+            }
+
+            // 5. 回退原始标题
+            return LogAndCache(biomeEntry, cacheKey, hasValidKey, biomeEntry.Title ?? "", "Fallback");
+        }
+
+        // ── 翻译链各步骤 ───────────────────────────────────
+
+        private static (string? Text, string? Tag) TryStep1(string sanitizedKey, string safeScope, string? scope)
+        {
+            string modLocKey = scope == "Terraria"
+                ? $"Mods.BiomeTitles.Title.Terraria.{sanitizedKey}"
+                : $"Mods.{safeScope}.Biomes.{sanitizedKey}.DisplayName";
+
+            if (TryLocalized(modLocKey) is { } localized)
+            {
+                if (scope == "Terraria")
+                    return (localized, "BTitles");
+
+                string? englishValue = GetEnglishTranslation(modLocKey);
+                if (englishValue != null && englishValue != localized)
+                    return (localized, "ModLocalization");
+            }
+            return (null, null);
+        }
+
+        private static (string? Text, string? Tag) TryLocalizedSteps(string tag, string locKey)
+        {
+            if (TryLocalized(locKey) is { } localized)
+                return (localized, tag);
+            return (null, null);
+        }
+
+        // ── 自定义覆盖 ─────────────────────────────────────
+
+        // BTitles 的 GeneralConfig 已有 ProjectReference，直接类型访问
+        private static string? ApplyCustomOverride(string currentName, object? configObj)
+        {
+            if (configObj is not GeneralConfig config || config.CustomBiomeNames == null)
                 return null;
-            }
 
-            // 1. 用户自定义生物群系名称（Config 可能为 null）
-            string? firstHit = config
-                ?.CustomBiomeNames?.FirstOrDefault(n => n.CurrentName == biomeEntry.Title)
-                ?.NewName;
-            if (firstHit != null)
-                return firstHit;
+            var match = config.CustomBiomeNames.FirstOrDefault(n => n.CurrentName == currentName);
+            if (match == null) return null;
 
-            // 2. 读源模组本地化 Mods.{Scope}.Biomes.{Key}.DisplayName（跳过原版 Terraria）
-            if (
-                biomeEntry.LocalizationScope != "Terraria"
-                && Language.ActiveCulture.Name != "en-US"
-            )
+            Diagnostics.DebugLog.Info(Language.GetTextValue(
+                $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.CustomOverride",
+                currentName, match.NewName));
+            return match.NewName;
+        }
+
+        // ── 日志与缓存 ─────────────────────────────────────
+
+        private static string LogAndCache(BiomeEntry entry, string cacheKey, bool hasValidKey, string text, string tag)
+        {
+            if (hasValidKey && !string.IsNullOrEmpty(text))
+                TranslationCache[cacheKey] = (text, tag);
+            LogBiomeEntry(entry.Key ?? "", text, entry, tag);
+            return text;
+        }
+
+        private static void LogBiomeEntry(string key, string text, BiomeEntry entry, string tag)
+        {
+            Diagnostics.DebugLog.Info(Language.GetTextValue(
+                $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.BiomeEntry", key, text));
+            string iconInfo = entry.Icon != null
+                ? Language.GetTextValue($"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.IconPresent",
+                    entry.Icon.Width, entry.Icon.Height)
+                : Language.GetTextValue($"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.IconNull");
+            Diagnostics.DebugLog.Info(Language.GetTextValue(
+                $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.BiomeDetail",
+                entry.LocalizationScope ?? "", iconInfo,
+                Language.GetTextValue($"Mods.{nameof(BTitlesLocalizationPatch)}.SourceTags.{tag}")));
+        }
+
+        // ── 本地化辅助 ─────────────────────────────────────
+
+        private static string? TryLocalized(string locKey)
+        {
+            if (Language.Exists(locKey))
             {
-                string modLocKey =
-                    $"Mods.{biomeEntry.LocalizationScope}" + $".Biomes.{sanitizedKey}.DisplayName";
-                string? result = TryLocalized(modLocKey);
-                /*
-                防御：仅当翻译结果与 BTitles 已有标题不同时才采纳
-                tModLoader 为每个 ModBiome 自动注册 DisplayName 键，Language.Exists 永远返回 true
-                但值可能是自动生成的 PascalCase 转可读文本，并非模组显式翻译
-                若翻译结果与 biomeEntry.Title 相同，说明标题已正确，继续回退给步骤 3/4 机会
-                */
-                if (result != null && result != biomeEntry.Title)
-                    return result;
+                string value = Language.GetTextValue(locKey);
+                if (!string.IsNullOrEmpty(value))
+                    return value;
             }
+            return null;
+        }
 
-            // 3. BTitles 自身翻译
-            if (Language.ActiveCulture.Name != "en-US")
+        // 反射访问 LocalizedText._translations，取英文值对比判断是否有真实翻译
+        private static string? GetEnglishTranslation(string locKey)
+        {
+            var localizedText = LanguageManager.Instance.GetText(locKey);
+            if (localizedText == null) return null;
+
+            try
             {
-                string btitlesKey =
-                    $"Mods.BiomeTitles.Title." + $"{biomeEntry.LocalizationScope}.{sanitizedKey}";
-                string? result = TryLocalized(btitlesKey);
-                if (result != null)
-                    return result;
+                var field = typeof(LocalizedText).GetField("_translations",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                if (field?.GetValue(localizedText) is Dictionary<string, string> translations
+                    && translations.TryGetValue("en-US", out var englishValue)
+                    && !string.IsNullOrEmpty(englishValue))
+                    return englishValue;
             }
-
-            // 4. 补丁模组补充翻译（不修改 BTitles 即可补充缺失翻译，如 Aether）
-            if (Language.ActiveCulture.Name != "en-US")
-            {
-                string extraKey =
-                    $"Mods.{nameof(BTitlesLocalizationPatch)}"
-                    + $".ExtraTitles.{biomeEntry.LocalizationScope}.{sanitizedKey}";
-                string? result = TryLocalized(extraKey);
-                if (result != null)
-                    return result;
-            }
-
-            // 5. 回退到原始方法（调用 orig 以兼容未来版本的新逻辑）
-            return orig(self, biomeEntry);
+            catch { }
+            return null;
         }
     }
 }
