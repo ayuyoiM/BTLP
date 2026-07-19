@@ -6,7 +6,6 @@ Logs: {
 	BiomeDetail: Scope={0} Icon={1} Source={2}
 	IconPresent: yes({0}x{1})
 	IconNull: no
-	FallbackColor: Fallback color: [{0}] → RGB({1},{2},{3})
 	CustomOverride: Custom override: {0} → {1}
 	CheckerNull: BiomeCheckFunctions is null
 	ConfigNull: BTitlesConfig is null, scan skipped
@@ -14,7 +13,7 @@ Logs: {
 	DictNull: BiomeDictionary is null
 	DictStats: Dictionary has {0} entries, {1} check functions
 	NoBiomeColor: Biome [{0}] has no biome color, using white default
-	BiomeColor: Title=RGB({0},{1},{2}) Stroke=RGB({3},{4},{5})
+	BiomeColor: RGB({0},{1},{2})
 	IconLoadFailed: Failed to load icon for biome [{0}]: {1}
 	InstanceNull: Instance is null
 	NewBiome: New: {0} → {1}

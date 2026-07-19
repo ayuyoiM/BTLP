@@ -42,20 +42,20 @@ namespace BTitlesLocalizationPatch.Scan
             // 复制到新 HashSet 避免扫描期间外部修改导致快照失真
             PreScanKeys = new HashSet<string>(biomeDict.Keys, biomeDict.Comparer);
 
-            var result = ScanAllModBiomes(mod, biomeDict, enableStyling, biomes);
-            if (result == null)
+            var scanResult = ScanAllModBiomes(mod, biomeDict, enableStyling, biomes);
+            if (scanResult == null)
                 return;
 
-            RegisteredCheckFunc = BuildDetectionFunction(result.AllBiomes, result.KeyMapping);
+            RegisteredCheckFunc = BuildDetectionFunction(scanResult.AllBiomes, scanResult.KeyMapping);
             checkFuncs.Insert(0, RegisteredCheckFunc);
             ScannedBiomes = biomes;
 
             mod.Logger.Info(
                 SafeFormat(
-                    Tr("ScanSummary"),
-                    result.Added,
-                    result.Updated,
-                    result.Skipped,
+                    Localize("ScanSummary"),
+                    scanResult.Added,
+                    scanResult.Updated,
+                    scanResult.Skipped,
                     biomeDict.Count,
                     checkFuncs.Count
                 )
@@ -68,7 +68,7 @@ namespace BTitlesLocalizationPatch.Scan
         {
             var instance = BTitlesLocalizationPatch.InstanceField?.GetValue(null) as BiomeTitlesMod;
             if (instance == null)
-                mod.Logger.Error(Tr("InstanceNull"));
+                mod.Logger.Error(Localize("InstanceNull"));
             return instance;
         }
 
@@ -81,7 +81,7 @@ namespace BTitlesLocalizationPatch.Scan
                 BTitlesLocalizationPatch.BiomeDictField?.GetValue(instance)
                 as Dictionary<string, BiomeEntry>;
             if (dict == null)
-                mod.Logger.Error(Tr("DictNull"));
+                mod.Logger.Error(Localize("DictNull"));
             return dict;
         }
 
@@ -94,7 +94,7 @@ namespace BTitlesLocalizationPatch.Scan
                 BTitlesLocalizationPatch.CheckFuncsField?.GetValue(instance)
                 as List<Func<Player, string>>;
             if (list == null)
-                mod.Logger.Error(Tr("CheckerNull"));
+                mod.Logger.Error(Localize("CheckerNull"));
             return list;
         }
 
@@ -125,7 +125,7 @@ namespace BTitlesLocalizationPatch.Scan
                         continue;
 
                     mod.Logger.Info(
-                        SafeFormat(Tr("ScanningMod"), targetMod.Name, modBiomes.Length)
+                        SafeFormat(Localize("ScanningMod"), targetMod.Name, modBiomes.Length)
                     );
 
                     foreach (var biome in modBiomes)
@@ -135,7 +135,7 @@ namespace BTitlesLocalizationPatch.Scan
                         {
                             mod.Logger.Info(
                                 SafeFormat(
-                                    Tr("SkippedPlaceholder"),
+                                    Localize("SkippedPlaceholder"),
                                     biome.Name,
                                     biome.DisplayName.Value
                                 )
@@ -224,7 +224,7 @@ namespace BTitlesLocalizationPatch.Scan
                 scannedBiomes.Add((namespacedKey, modBiome));
                 added++;
                 mod.Logger.Info(
-                    SafeFormat(Tr("NewBiome"), modBiome.Name, modBiome.DisplayName.Value)
+                    SafeFormat(Localize("NewBiome"), modBiome.Name, modBiome.DisplayName.Value)
                 );
             }
         }
@@ -249,15 +249,13 @@ namespace BTitlesLocalizationPatch.Scan
                 BiomeStyleHelper.GetTitleColors(
                     modBiome,
                     out Color titleColor,
-                    out Color strokeColor
+                    out _
                 );
                 entry.TitleColor = titleColor;
-                entry.StrokeColor = strokeColor;
             }
             else
             {
                 entry.TitleColor = Color.White;
-                entry.StrokeColor = Color.Black;
             }
 
             return entry;
@@ -287,7 +285,7 @@ namespace BTitlesLocalizationPatch.Scan
                     catch (Exception ex)
                     {
                         DebugLog.Warn(
-                            SafeFormat(Tr("DetectionEx"), sourceMod.Name, biome.Name, ex.Message)
+                            SafeFormat(Localize("DetectionEx"), sourceMod.Name, biome.Name, ex.Message)
                         );
                     }
                 }
@@ -299,11 +297,11 @@ namespace BTitlesLocalizationPatch.Scan
 
         private static void Rollback(Dictionary<string, BiomeEntry> biomeDict)
         {
-            var addedKeys =
+            var newlyAddedKeys =
                 PreScanKeys != null
-                    ? biomeDict.Keys.Where(k => !PreScanKeys.Contains(k)).ToList()
+                    ? biomeDict.Keys.Where(key => !PreScanKeys.Contains(key)).ToList()
                     : new List<string>();
-            foreach (var key in addedKeys)
+            foreach (var key in newlyAddedKeys)
                 biomeDict.Remove(key);
 
             RegisteredCheckFunc = null;
@@ -313,7 +311,7 @@ namespace BTitlesLocalizationPatch.Scan
 
         // ── 本地化辅助
 
-        private static string Tr(string key) =>
+        private static string Localize(string key) =>
             Language.GetTextValue($"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{key}");
 
         // HJSON 本地化值可能含有未转义 { } 导致 FormatException，兜底返回原模板

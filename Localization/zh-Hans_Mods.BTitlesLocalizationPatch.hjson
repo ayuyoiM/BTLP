@@ -6,7 +6,6 @@ Logs: {
 	BiomeDetail: 源={0} 图标={1} 翻译来源={2}
 	IconPresent: 有({0}x{1})
 	IconNull: 无
-	FallbackColor: 回退配色：[{0}] → RGB({1},{2},{3})
 	CustomOverride: 自定义覆盖：{0} → {1}
 	CheckerNull: 未获取到群系检测函数列表，自动发现功能已禁用
 	ConfigNull: 未获取到配置实例，扫描已跳过
@@ -14,7 +13,7 @@ Logs: {
 	DictNull: 未获取到群系字典，自动发现功能已禁用
 	DictStats: 群系字典共 {0} 项，检测函数共 {1} 个
 	NoBiomeColor: 群系 [{0}] 没有返回颜色，使用白色默认标题
-	BiomeColor: 标题=RGB({0},{1},{2}) 描边=RGB({3},{4},{5})
+	BiomeColor: RGB({0},{1},{2})
 	IconLoadFailed: 加载群系 [{0}] 的图标时失败: {1}
 	InstanceNull: 未获取到 BTitles 主模组实例，自动发现功能已禁用
 	NewBiome: 新增群系: [{0}] → {1}

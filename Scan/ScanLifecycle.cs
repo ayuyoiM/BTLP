@@ -35,7 +35,7 @@ namespace BTitlesLocalizationPatch.Scan
             if (biomeDict == null)
                 return;
 
-            int styled = 0;
+            int styledCount = 0;
             foreach (var (dictKey, modBiome) in BiomeRegistrar.ScannedBiomes)
             {
                 // 跳过预存条目：不覆盖 BTitles 原有的配色
@@ -57,27 +57,24 @@ namespace BTitlesLocalizationPatch.Scan
                     BiomeStyleHelper.GetTitleColors(
                         modBiome,
                         out Color titleColor,
-                        out Color strokeColor
+                        out _
                     );
                     entry.TitleColor = titleColor;
-                    entry.StrokeColor = strokeColor;
                 }
                 else
                 {
-                    // 关闭配色时统一用白色标题 + 黑色描边
                     entry.TitleColor = Color.White;
-                    entry.StrokeColor = Color.Black;
                 }
-                styled++;
+                styledCount++;
             }
 
-            if (styled > 0)
+            if (styledCount > 0)
             {
-                string key = enableStyling ? "RestyledOn" : "RestyledOff";
+                string restyleKey = enableStyling ? "RestyledOn" : "RestyledOff";
                 Diagnostics.DebugLog.Info(
                     Language.GetTextValue(
-                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{key}",
-                        styled
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{restyleKey}",
+                        styledCount
                     )
                 );
             }

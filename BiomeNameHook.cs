@@ -22,6 +22,7 @@ namespace BTitlesLocalizationPatch
         private static volatile string _lastCultureName = "";
 
         public static string GetActualTitleNamePrefixHook(
+            // orig 是 MonoMod 前缀 Hook 的原始方法引用，本 Hook 完全替换原逻辑故不使用
             Func<BiomeTitlesUI, BiomeEntry, string> orig,
             BiomeTitlesUI self,
             BiomeEntry biomeEntry
@@ -33,8 +34,8 @@ namespace BTitlesLocalizationPatch
                 return biomeEntry.Title ?? "";
 
             var config = self.Config;
-            string key = biomeEntry.Key ?? "";
-            string sanitizedKey = key.Replace(" ", "_");
+            string biomeKey = biomeEntry.Key ?? "";
+            string sanitizedKey = biomeKey.Replace(" ", "_");
             string safeScope = (biomeEntry.LocalizationScope ?? "").Replace(".", "_");
             bool hasValidKey = !string.IsNullOrEmpty(sanitizedKey);
 
@@ -49,43 +50,29 @@ namespace BTitlesLocalizationPatch
             }
 
             // 缓存命中：从基础翻译查自定义覆盖
-            if (hasValidKey && TranslationCache.TryGetValue(cacheKey, out var cached))
+            if (hasValidKey && TranslationCache.TryGetValue(cacheKey, out var cachedEntry))
             {
-                string displayName = ApplyCustomOverride(cached.Text, config) ?? cached.Text;
-                string tag = displayName == cached.Text ? cached.Tag : "CustomName";
-                LogBiomeEntry(biomeEntry.Key ?? "", displayName, biomeEntry, tag);
+                string displayName = ApplyCustomOverride(cachedEntry.Text, config) ?? cachedEntry.Text;
+                string sourceTag = displayName == cachedEntry.Text ? cachedEntry.Tag : "CustomName";
+                LogBiomeEntry(biomeEntry.Key ?? "", displayName, biomeEntry, sourceTag);
                 return displayName;
             }
 
-            // 回退配色：无图标且 TitleColor 透明时默认白色
-            if (biomeEntry.Icon == null && biomeEntry.TitleColor == default)
+            // 回退配色：TitleColor 透明时图标采样
+            if (biomeEntry.TitleColor == default && biomeEntry.Icon != null)
             {
-                Color fallback = BiomeStyleHelper.GetFallbackColor(
-                    biomeEntry.Key ?? biomeEntry.Title ?? ""
-                );
-                biomeEntry.TitleColor = fallback;
-                biomeEntry.StrokeColor = new Color(
-                    (int)(fallback.R * 0.35f),
-                    (int)(fallback.G * 0.35f),
-                    (int)(fallback.B * 0.35f)
-                );
-                Diagnostics.DebugLog.Info(
-                    Language.GetTextValue(
-                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.FallbackColor",
-                        biomeEntry.Key ?? "",
-                        fallback.R,
-                        fallback.G,
-                        fallback.B
-                    )
-                );
+                biomeEntry.TitleColor = BiomeStyleHelper.SampleDominantColor(biomeEntry.Icon);
             }
 
             // 翻译回退链：先命中者胜出
             string? baseText = null;
             string? baseTag = null;
 
+            // 非英文环境才查翻译键
+            bool shouldTranslate = hasValidKey && currentCulture != "en-US";
+
             // 1. 源模组本地化
-            if (hasValidKey && currentCulture != "en-US")
+            if (shouldTranslate)
                 (baseText, baseTag) = TryStep1(
                     sanitizedKey,
                     safeScope,
@@ -93,14 +80,14 @@ namespace BTitlesLocalizationPatch
                 );
 
             // 2. BTitles 自身翻译
-            if (baseText == null && hasValidKey && currentCulture != "en-US")
+            if (baseText == null && shouldTranslate)
                 (baseText, baseTag) = TryLocalizedSteps(
                     "BTitles",
                     $"Mods.BiomeTitles.Title.{safeScope}.{sanitizedKey}"
                 );
 
             // 3. 补丁模组补充翻译
-            if (baseText == null && hasValidKey && currentCulture != "en-US")
+            if (baseText == null && shouldTranslate)
                 (baseText, baseTag) = TryLocalizedSteps(
                     "ExtraTitles",
                     $"Mods.{nameof(BTitlesLocalizationPatch)}.ExtraTitles.{safeScope}.{sanitizedKey}"
@@ -154,17 +141,17 @@ namespace BTitlesLocalizationPatch
             string? scope
         )
         {
-            string modLocKey =
+            string localizationKey =
                 scope == "Terraria"
                     ? $"Mods.BiomeTitles.Title.Terraria.{sanitizedKey}"
                     : $"Mods.{safeScope}.Biomes.{sanitizedKey}.DisplayName";
 
-            if (TryLocalized(modLocKey) is { } localized)
+            if (TryLocalized(localizationKey) is { } localized)
             {
                 if (scope == "Terraria")
                     return (localized, "BTitles");
 
-                string? englishValue = GetEnglishTranslation(modLocKey);
+                string? englishValue = GetEnglishTranslation(localizationKey);
                 if (englishValue != null && englishValue != localized)
                     return (localized, "ModLocalization");
             }
@@ -250,10 +237,7 @@ namespace BTitlesLocalizationPatch
                     $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.BiomeColor",
                     entry.TitleColor.R,
                     entry.TitleColor.G,
-                    entry.TitleColor.B,
-                    entry.StrokeColor.R,
-                    entry.StrokeColor.G,
-                    entry.StrokeColor.B
+                    entry.TitleColor.B
                 )
             );
         }

@@ -1,4 +1,6 @@
+#nullable enable
 using System;
+using System.Collections.Generic;
 using BTitlesLocalizationPatch.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -11,9 +13,9 @@ namespace BTitlesLocalizationPatch.Scan
     /* 自动配色辅助方法 */
     internal static class BiomeStyleHelper
     {
-        // 取色策略：群系返回的颜色（BackgroundColor）→ 白色回退
+        // 取色链：群系返回色 → 图标主色（最多色）→ 白色回退
         public static void GetTitleColors(
-            ModBiome biome,
+            ModBiome? biome,
             out Color titleColor,
             out Color strokeColor
         )
@@ -21,47 +23,53 @@ namespace BTitlesLocalizationPatch.Scan
             if (biome == null)
             {
                 titleColor = Color.White;
-                strokeColor = Color.Black;
+                strokeColor = Color.Transparent;
                 return;
             }
 
             if (biome.BackgroundColor.HasValue)
             {
                 titleColor = biome.BackgroundColor.Value;
-            }
-            else
-            {
-                // 群系没有返回颜色，日志提示
-                Diagnostics.DebugLog.Info(
-                    Language.GetTextValue(
-                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.NoBiomeColor",
-                        biome.FullName
-                    )
-                );
-                titleColor = Color.White;
+                strokeColor = Color.Transparent;
+                return;
             }
 
-            strokeColor = new Color(
-                (int)(titleColor.R * 0.35f),
-                (int)(titleColor.G * 0.35f),
-                (int)(titleColor.B * 0.35f)
+            // 尝试图标采样（取出现最多的颜色）
+            Texture2D? icon = TryLoadIcon(biome);
+            if (icon != null)
+            {
+                titleColor = SampleDominantColor(icon);
+                strokeColor = Color.Transparent;
+                return;
+            }
+
+            // 没返回色也没图标时日志提示
+            // 后台线程（PostSetupContent）不设颜色，Hook 会在主线程补色
+            Diagnostics.DebugLog.Info(
+                Language.GetTextValue(
+                    $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.NoBiomeColor",
+                    biome.FullName
+                )
             );
+            // 留 default 让 BiomeNameHook 在主线程图标采样补色
+            titleColor = default;
+            strokeColor = default;
         }
 
         /*
         尝试加载 BestiaryIcon
         加载失败时静默返回 null，不影响群系注册流程
         */
-        public static Texture2D TryLoadIcon(ModBiome biome)
+        public static Texture2D? TryLoadIcon(ModBiome? biome)
         {
             if (biome == null)
                 return null;
 
             try
             {
-                string path = biome.BestiaryIcon;
-                return !string.IsNullOrEmpty(path) && ModContent.HasAsset(path)
-                    ? ModContent.Request<Texture2D>(path, AssetRequestMode.ImmediateLoad).Value
+                string iconPath = biome.BestiaryIcon;
+                return !string.IsNullOrEmpty(iconPath) && ModContent.HasAsset(iconPath)
+                    ? ModContent.Request<Texture2D>(iconPath, AssetRequestMode.ImmediateLoad).Value
                     : null;
             }
             catch (Exception ex)
@@ -78,11 +86,53 @@ namespace BTitlesLocalizationPatch.Scan
         }
 
         /*
-        兜底颜色：无群系返回色时使用白色
+        从整个图标采样，返回出现次数最多的颜色（众数）
+        像素量化到 32 级色块避免噪点干扰
         */
-        public static Color GetFallbackColor(string key)
+        public static Color SampleDominantColor(Texture2D icon)
         {
-            return string.IsNullOrEmpty(key) ? Color.Gray : Color.White;
+            if (icon == null || icon.IsDisposed || icon.Width <= 1 || icon.Height <= 1)
+                return Color.White;
+
+            int sampleWidth = Math.Min(icon.Width, 256);
+            int sampleHeight = Math.Min(icon.Height, 256);
+
+            Color[] pixels = new Color[sampleWidth * sampleHeight];
+            try
+            {
+                icon.GetData(0, new Rectangle(0, 0, sampleWidth, sampleHeight), pixels, 0, pixels.Length);
+            }
+            catch
+            {
+                return Color.White;
+            }
+
+            var colorFrequency = new Dictionary<int, int>();
+            int highestFrequency = 0;
+            Color mostCommonColor = Color.Gray;
+
+            foreach (ref Color pixel in pixels.AsSpan())
+            {
+                if (pixel.A < 128) continue;
+                int brightness = pixel.R + pixel.G + pixel.B;
+                if (brightness < 30 || brightness > 720) continue;
+
+                int colorKey = (pixel.R >> 3) << 10 | (pixel.G >> 3) << 5 | (pixel.B >> 3);
+                colorFrequency.TryGetValue(colorKey, out int currentCount);
+                currentCount++;
+                colorFrequency[colorKey] = currentCount;
+
+                if (currentCount > highestFrequency)
+                {
+                    highestFrequency = currentCount;
+                    mostCommonColor = new Color(
+                        (byte)(((colorKey >> 10) & 0x1F) << 3 | 4),
+                        (byte)(((colorKey >> 5) & 0x1F) << 3 | 4),
+                        (byte)((colorKey & 0x1F) << 3 | 4));
+                }
+            }
+
+            return highestFrequency > 0 ? mostCommonColor : Color.Gray;
         }
     }
 }
