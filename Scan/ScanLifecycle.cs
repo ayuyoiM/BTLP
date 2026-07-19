@@ -18,7 +18,7 @@ namespace BTitlesLocalizationPatch.Scan
     {
         /*
         运行时配色热重载：响应配置变更事件
-        开启时自动配色（BackgroundColor / HSL 色盘），关闭时统一白色+黑色描边
+        开启时用群系返回色自动配色，关闭时统一白色+黑色描边
         */
         internal static void Restyle(bool enableStyling)
         {

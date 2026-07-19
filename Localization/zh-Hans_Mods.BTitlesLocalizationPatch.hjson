@@ -13,6 +13,7 @@ Logs: {
 	DetectionEx: 检测 [{0}] 模组的 [{1}] 群系时出错: {2}
 	DictNull: 未获取到群系字典，自动发现功能已禁用
 	DictStats: 群系字典共 {0} 项，检测函数共 {1} 个
+	NoBiomeColor: 群系 [{0}] 没有返回颜色，使用白色默认标题
 	BiomeColor: 标题=RGB({0},{1},{2}) 描边=RGB({3},{4},{5})
 	IconLoadFailed: 加载群系 [{0}] 的图标时失败: {1}
 	InstanceNull: 未获取到 BTitles 主模组实例，自动发现功能已禁用

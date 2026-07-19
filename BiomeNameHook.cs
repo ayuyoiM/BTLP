@@ -57,7 +57,7 @@ namespace BTitlesLocalizationPatch
                 return displayName;
             }
 
-            // 回退配色：无图标且 TitleColor 透明时用 HSL 色盘
+            // 回退配色：无图标且 TitleColor 透明时默认白色
             if (biomeEntry.Icon == null && biomeEntry.TitleColor == default)
             {
                 Color fallback = BiomeStyleHelper.GetFallbackColor(
@@ -146,7 +146,7 @@ namespace BTitlesLocalizationPatch
             );
         }
 
-        // ── 翻译链各步骤 ───────────────────────────────────
+        // ── 翻译链各步骤
 
         private static (string? Text, string? Tag) TryStep1(
             string sanitizedKey,
@@ -178,7 +178,7 @@ namespace BTitlesLocalizationPatch
             return (null, null);
         }
 
-        // ── 自定义覆盖 ─────────────────────────────────────
+        // ── 自定义覆盖
 
         // BTitles 的 GeneralConfig 已有 ProjectReference，直接类型访问
         private static string? ApplyCustomOverride(string currentName, object? configObj)
@@ -200,7 +200,7 @@ namespace BTitlesLocalizationPatch
             return match.NewName;
         }
 
-        // ── 日志与缓存 ─────────────────────────────────────
+        // ── 日志与缓存
 
         private static string LogAndCache(
             BiomeEntry entry,
@@ -258,7 +258,7 @@ namespace BTitlesLocalizationPatch
             );
         }
 
-        // ── 本地化辅助 ─────────────────────────────────────
+        // ── 本地化辅助
 
         private static string? TryLocalized(string locKey)
         {
