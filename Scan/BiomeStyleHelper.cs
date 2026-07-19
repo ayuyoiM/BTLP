@@ -16,21 +16,18 @@ namespace BTitlesLocalizationPatch.Scan
         // 取色链：群系返回色 → 图标主色（最多色）→ 白色回退
         public static void GetTitleColors(
             ModBiome? biome,
-            out Color titleColor,
-            out Color strokeColor
+            out Color titleColor
         )
         {
             if (biome == null)
             {
                 titleColor = Color.White;
-                strokeColor = Color.Transparent;
                 return;
             }
 
             if (biome.BackgroundColor.HasValue)
             {
                 titleColor = biome.BackgroundColor.Value;
-                strokeColor = Color.Transparent;
                 return;
             }
 
@@ -39,7 +36,6 @@ namespace BTitlesLocalizationPatch.Scan
             if (icon != null)
             {
                 titleColor = SampleDominantColor(icon);
-                strokeColor = Color.Transparent;
                 return;
             }
 
@@ -53,7 +49,6 @@ namespace BTitlesLocalizationPatch.Scan
             );
             // 留 default 让 BiomeNameHook 在主线程图标采样补色
             titleColor = default;
-            strokeColor = default;
         }
 
         /*

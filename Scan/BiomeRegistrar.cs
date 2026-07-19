@@ -25,7 +25,7 @@ namespace BTitlesLocalizationPatch.Scan
 
         public static void Run(Mod mod, bool enableStyling)
         {
-            ScanLifecycle.Cleanup();
+            Cleanup();
             ScannedBiomes = null;
             var biomes = new List<(string DictKey, ModBiome Biome)>();
 
@@ -248,8 +248,7 @@ namespace BTitlesLocalizationPatch.Scan
             {
                 BiomeStyleHelper.GetTitleColors(
                     modBiome,
-                    out Color titleColor,
-                    out _
+                    out Color titleColor
                 );
                 entry.TitleColor = titleColor;
             }
@@ -325,6 +324,46 @@ namespace BTitlesLocalizationPatch.Scan
             {
                 return format;
             }
+        }
+
+        /*
+        清理注册的检测函数，在 Unload 时从 BTitles 的 BiomeCheckFunctions 列表中移除
+        防止热重载时重复累积 lambda，导致无效的额外检测调用
+        */
+        public static void Cleanup()
+        {
+            if (RegisteredCheckFunc == null)
+                return;
+
+            try
+            {
+                var instance = BTitlesLocalizationPatch.InstanceField?.GetValue(null);
+                if (instance == null)
+                    return;
+
+                var checkFuncs =
+                    BTitlesLocalizationPatch.CheckFuncsField?.GetValue(instance)
+                    as List<Func<Player, string>>;
+                if (checkFuncs == null)
+                    return;
+
+                checkFuncs.Remove(RegisteredCheckFunc);
+                // 只在成功移除后才释放引用；移除失败时保留引用，下次清理可重试
+                RegisteredCheckFunc = null;
+            }
+            catch (Exception ex)
+            {
+                // 如果有一天 BTitles 突然复活更新了，这条日志会告诉我们需要改什么
+                // 不移除 RegisteredCheckFunc 引用，保留以在下次清理时重试
+                DebugLog.Warn($"Cleanup: failed to remove check func - {ex.Message}");
+            }
+        }
+
+        // 清理扫描记录和快照，供 Unload 或重新扫描时使用
+        internal static void ClearScannedBiomes()
+        {
+            ScannedBiomes = null;
+            PreScanKeys = null;
         }
 
         // ── 内部数据传输

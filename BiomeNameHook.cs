@@ -39,6 +39,7 @@ namespace BTitlesLocalizationPatch
             string safeScope = (biomeEntry.LocalizationScope ?? "").Replace(".", "_");
             bool hasValidKey = !string.IsNullOrEmpty(sanitizedKey);
 
+            // cacheKey 仅作字典键使用，非文件路径，无非法字符风险
             string cacheKey = $"{safeScope}|{sanitizedKey}";
             string currentCulture = Language.ActiveCulture.Name;
 

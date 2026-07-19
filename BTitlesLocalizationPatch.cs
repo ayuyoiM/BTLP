@@ -1,9 +1,11 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using BTitles;
 using BTitlesLocalizationPatch.Diagnostics;
+using Microsoft.Xna.Framework;
 using MonoMod.RuntimeDetour;
 using Terraria;
 using Terraria.Localization;
@@ -190,7 +192,62 @@ namespace BTitlesLocalizationPatch
         {
             if (!HookInstalled)
                 return;
-            Scan.ScanLifecycle.Restyle(enabled);
+
+            if (Scan.BiomeRegistrar.ScannedBiomes == null || Scan.BiomeRegistrar.ScannedBiomes.Count == 0)
+                return;
+
+            var instance = InstanceField?.GetValue(null);
+            if (instance == null)
+                return;
+
+            var biomeDict =
+                BiomeDictField?.GetValue(instance)
+                as Dictionary<string, BiomeEntry>;
+            if (biomeDict == null)
+                return;
+
+            int styledCount = 0;
+            foreach (var (dictKey, modBiome) in Scan.BiomeRegistrar.ScannedBiomes)
+            {
+                // 跳过预存条目：不覆盖 BTitles 原有的配色
+                if (
+                    Scan.BiomeRegistrar.PreScanKeys != null
+                    && Scan.BiomeRegistrar.PreScanKeys.Contains(dictKey)
+                )
+                    continue;
+
+                if (!biomeDict.TryGetValue(dictKey, out var entry))
+                    continue;
+
+                // 扫描记录中的 modBiome 引用一般不会 null，但防御留一手
+                if (modBiome == null)
+                    continue;
+
+                if (enabled)
+                {
+                    Scan.BiomeStyleHelper.GetTitleColors(
+                        modBiome,
+                        out Color titleColor
+                    );
+                    entry.TitleColor = titleColor;
+                }
+                else
+                {
+                    entry.TitleColor = Color.White;
+                }
+                styledCount++;
+            }
+
+            if (styledCount > 0)
+            {
+                string restyleKey = enabled ? "RestyledOn" : "RestyledOff";
+                Diagnostics.DebugLog.Info(
+                    Language.GetTextValue(
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{restyleKey}",
+                        styledCount
+                    )
+                );
+            }
         }
 
         internal static void ApplyConfigChangeScan(bool enabled)
@@ -200,11 +257,14 @@ namespace BTitlesLocalizationPatch
 
             BiomeNameHook.TranslationCache.Clear();
 
+            var mod = ModContent.GetInstance<BTitlesLocalizationPatch>();
+            if (mod == null)
+                return;
+
             if (enabled)
             {
                 var config = ModContent.GetInstance<BTitlesConfig>();
-                var mod = ModContent.GetInstance<BTitlesLocalizationPatch>();
-                if (mod != null && config != null)
+                if (config != null)
                 {
                     mod.Logger.Info(
                         Language.GetTextValue(
@@ -216,15 +276,54 @@ namespace BTitlesLocalizationPatch
             }
             else
             {
-                var mod = ModContent.GetInstance<BTitlesLocalizationPatch>();
-                if (mod != null)
-                {
-                    mod.Logger.Info(
-                        Language.GetTextValue(
-                            $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanToggleOff"
-                        )
-                    );
-                    Scan.ScanLifecycle.UnregisterAll(mod);
+                mod.Logger.Info(
+                    Language.GetTextValue(
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanToggleOff"
+                    )
+                );
+
+                    // 运行时扫描热卸载：从 BTitles 字典移除本次扫描新增的条目，清理检测函数
+                    if (Scan.BiomeRegistrar.ScannedBiomes == null || Scan.BiomeRegistrar.ScannedBiomes.Count == 0)
+                    {
+                        Scan.BiomeRegistrar.Cleanup();
+                        return;
+                    }
+
+                    var instance = InstanceField?.GetValue(null);
+                    if (instance == null)
+                        return;
+
+                    var biomeDict =
+                        BiomeDictField?.GetValue(instance)
+                        as Dictionary<string, BiomeEntry>;
+                    if (biomeDict == null)
+                        return;
+
+                    // 移除本次扫描新增的字典条目（快照中不存在的键）
+                    if (Scan.BiomeRegistrar.PreScanKeys != null)
+                    {
+                        int removed = 0;
+                        foreach (var (dictKey, _) in Scan.BiomeRegistrar.ScannedBiomes)
+                        {
+                            if (
+                                dictKey != null
+                                && !Scan.BiomeRegistrar.PreScanKeys.Contains(dictKey)
+                                && biomeDict.Remove(dictKey)
+                            )
+                                removed++;
+                        }
+                        if (removed > 0)
+                            mod.Logger.Info(
+                                Language.GetTextValue(
+                                    $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.UnregisteredBiomes",
+                                    removed
+                                )
+                            );
+                    }
+
+                    Scan.BiomeRegistrar.Cleanup();
+                    Scan.BiomeRegistrar.ScannedBiomes = null;
+                    Scan.BiomeRegistrar.PreScanKeys = null;
                 }
             }
         }
@@ -251,9 +350,9 @@ namespace BTitlesLocalizationPatch
             _loaded = false;
 
             // 从 BTitles 检测函数列表移除本模组注册的 lambda
-            Scan.ScanLifecycle.Cleanup();
+            Scan.BiomeRegistrar.Cleanup();
             // 清理扫描记录，避免热重载后残留旧引用
-            Scan.ScanLifecycle.ClearScannedBiomes();
+            Scan.BiomeRegistrar.ClearScannedBiomes();
 
             // 清理调试日志写入器，防止卸载后残留引用
             Diagnostics.DebugLog.InfoWriter = s => { };
