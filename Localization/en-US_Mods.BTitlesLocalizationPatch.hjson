@@ -19,6 +19,11 @@ Logs: {
 	ScanningMod: Scanning mod [{0}] with {1} ModBiomes
 	SkippedPlaceholder: Skipped placeholder biome: [{0}] {1} (no IsBiomeActive override)
 	ScanSummary: Scan done: {0} added, {1} updated, {2} skipped | {3} entries, {4} checks
+	ScanToggleOn: Scan toggled ON, starting scan...
+	ScanToggleOff: Scan toggled OFF, unregistering scanned biomes...
+	RestyledOn: Restyled {0} biomes (auto-styling ON)
+	RestyledOff: Reset colors for {0} biomes (auto-styling OFF)
+	UnregisteredBiomes: Scan disabled: unregistered {0} biome(s) from dictionary
 }
 
 SourceTags: {

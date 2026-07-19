@@ -26,23 +26,21 @@ namespace BTitlesLocalizationPatch
         [TooltipKey("$Mods.BTitlesLocalizationPatch.Configs.BTitlesConfig.EnableDebugLog.Tooltip")]
         public bool EnableDebugLog { get; set; }
 
-        // tModLoader 配置有确认保存弹窗，OnChanged 只在保存时触发一次，不需要防抖
-        internal static event Action<bool>? OnScanChanged;
-        internal static event Action<bool>? OnAutoStylingChanged;
-
         private bool? _lastAutoStyling;
         private bool? _lastScan;
 
+        // tModLoader 确认保存后通知，直接执行配置变更
+        // 主菜单时 BTitles 未加载，操作会静默跳过；进世界后 PostSetupContent 处理初始状态
         public override void OnChanged()
         {
             bool styleCurrent = EnableAutoStyling;
             if (_lastAutoStyling.HasValue && styleCurrent != _lastAutoStyling.Value)
-                OnAutoStylingChanged?.Invoke(styleCurrent);
+                BTitlesLocalizationPatch.ApplyConfigChangeStyle(styleCurrent);
             _lastAutoStyling = styleCurrent;
 
             bool scanCurrent = EnableScan;
             if (_lastScan.HasValue && scanCurrent != _lastScan.Value)
-                OnScanChanged?.Invoke(scanCurrent);
+                BTitlesLocalizationPatch.ApplyConfigChangeScan(scanCurrent);
             _lastScan = scanCurrent;
         }
     }

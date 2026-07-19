@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using Terraria;
+using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace BTitlesLocalizationPatch.Scan
@@ -65,11 +66,10 @@ namespace BTitlesLocalizationPatch.Scan
 
             if (styled > 0)
             {
+                string key = enableStyling ? "RestyledOn" : "RestyledOff";
                 Diagnostics.DebugLog.Info(
-                    enableStyling
-                        ? $"Restyled {styled} biomes (auto-styling ON)"
-                        : $"Reset colors for {styled} biomes (auto-styling OFF)"
-                );
+                    Language.GetTextValue(
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{key}", styled));
             }
         }
 
@@ -107,9 +107,8 @@ namespace BTitlesLocalizationPatch.Scan
                         removed++;
                 }
                 if (removed > 0)
-                    mod.Logger.Info(
-                        $"Scan disabled: unregistered {removed} biome(s) from dictionary"
-                    );
+                    mod.Logger.Info(Language.GetTextValue(
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.UnregisteredBiomes", removed));
             }
 
             // 移除检测函数

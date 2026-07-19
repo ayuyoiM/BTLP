@@ -19,6 +19,11 @@ Logs: {
 	ScanningMod: 正在扫描模组 [{0}]，发现 {1} 个模组群系
 	SkippedPlaceholder: 跳过占位群系: [{0}] → {1}（未重写检测方法）
 	ScanSummary: 扫描完毕：{0} 新增，{1} 更新，{2} 跳过 | 字典 {3} 项，检测 {4} 个
+	ScanToggleOn: 已启用扫描，开始扫描……
+	ScanToggleOff: 已禁用扫描，卸载已注册的群系……
+	RestyledOn: 已配色 {0} 个群系
+	RestyledOff: 已重置 {0} 个群系的颜色
+	UnregisteredBiomes: 已从字典卸载 {0} 个群系
 }
 
 SourceTags: {

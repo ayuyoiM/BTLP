@@ -46,16 +46,9 @@ namespace BTitlesLocalizationPatch
             }
             _loaded = true;
 
-            SubscribeConfigEvents();
             InstallDebugLogger();
             CacheReflectionFields();
             InstallHookWithFingerprint();
-        }
-
-        private void SubscribeConfigEvents()
-        {
-            BTitlesConfig.OnScanChanged += ApplyScanToggle;
-            BTitlesConfig.OnAutoStylingChanged += ApplyStyleToggle;
         }
 
         /*
@@ -172,29 +165,28 @@ namespace BTitlesLocalizationPatch
             }
         }
 
-        private static void ApplyStyleToggle(bool enabled)
+        // tModLoader 通知配置变更后直接执行，由 ModConfig.OnChanged 调用
+        // 主菜单时 BTitles Instance 为 null，操作会静默跳过
+        internal static void ApplyConfigChangeStyle(bool enabled)
         {
-            if (!HookInstalled)
-                return;
+            if (!HookInstalled) return;
             Scan.ScanLifecycle.Restyle(enabled);
         }
 
-        private static void ApplyScanToggle(bool enabled)
+        internal static void ApplyConfigChangeScan(bool enabled)
         {
-            if (!HookInstalled)
-                return;
+            if (!HookInstalled) return;
 
-            // 清空翻译缓存：扫描可能更新群系标题，上次缓存的可能已过时
             BiomeNameHook.TranslationCache.Clear();
 
             if (enabled)
             {
-                // 获取当前配置，用上次的配色开关设置
                 var config = ModContent.GetInstance<BTitlesConfig>();
                 var mod = ModContent.GetInstance<BTitlesLocalizationPatch>();
                 if (mod != null && config != null)
                 {
-                    mod.Logger.Info("Scan toggled ON, starting scan...");
+                    mod.Logger.Info(Language.GetTextValue(
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanToggleOn"));
                     Scan.BiomeRegistrar.Run(mod, config.EnableAutoStyling);
                 }
             }
@@ -203,7 +195,8 @@ namespace BTitlesLocalizationPatch
                 var mod = ModContent.GetInstance<BTitlesLocalizationPatch>();
                 if (mod != null)
                 {
-                    mod.Logger.Info("Scan toggled OFF, unregistering scanned biomes...");
+                    mod.Logger.Info(Language.GetTextValue(
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanToggleOff"));
                     Scan.ScanLifecycle.UnregisterAll(mod);
                 }
             }
@@ -211,10 +204,6 @@ namespace BTitlesLocalizationPatch
 
         public override void Unload()
         {
-            // 取消订阅配置事件
-            BTitlesConfig.OnScanChanged -= ApplyScanToggle;
-            BTitlesConfig.OnAutoStylingChanged -= ApplyStyleToggle;
-
             // 清理翻译缓存
             BiomeNameHook.TranslationCache.Clear();
 
