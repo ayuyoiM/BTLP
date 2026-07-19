@@ -13,6 +13,7 @@ Logs: {
 	DetectionEx: Exception detecting {0}.{1}: {2}
 	DictNull: BiomeDictionary is null
 	DictStats: Dictionary has {0} entries, {1} check functions
+	BiomeColor: Title=RGB({0},{1},{2}) Stroke=RGB({3},{4},{5})
 	IconLoadFailed: Failed to load icon for biome [{0}]: {1}
 	InstanceNull: Instance is null
 	NewBiome: New: {0} → {1}

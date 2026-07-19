@@ -1,8 +1,8 @@
 #nullable enable
-using BTitles;
-using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using BTitles;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Localization;
 using Terraria.ModLoader;
@@ -39,7 +39,10 @@ namespace BTitlesLocalizationPatch.Scan
             foreach (var (dictKey, modBiome) in BiomeRegistrar.ScannedBiomes)
             {
                 // 跳过预存条目：不覆盖 BTitles 原有的配色
-                if (BiomeRegistrar.PreScanKeys != null && BiomeRegistrar.PreScanKeys.Contains(dictKey))
+                if (
+                    BiomeRegistrar.PreScanKeys != null
+                    && BiomeRegistrar.PreScanKeys.Contains(dictKey)
+                )
                     continue;
 
                 if (!biomeDict.TryGetValue(dictKey, out var entry))
@@ -51,7 +54,11 @@ namespace BTitlesLocalizationPatch.Scan
 
                 if (enableStyling)
                 {
-                    BiomeStyleHelper.GetTitleColors(modBiome, out Color titleColor, out Color strokeColor);
+                    BiomeStyleHelper.GetTitleColors(
+                        modBiome,
+                        out Color titleColor,
+                        out Color strokeColor
+                    );
                     entry.TitleColor = titleColor;
                     entry.StrokeColor = strokeColor;
                 }
@@ -69,7 +76,10 @@ namespace BTitlesLocalizationPatch.Scan
                 string key = enableStyling ? "RestyledOn" : "RestyledOff";
                 Diagnostics.DebugLog.Info(
                     Language.GetTextValue(
-                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{key}", styled));
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.{key}",
+                        styled
+                    )
+                );
             }
         }
 
@@ -101,14 +111,20 @@ namespace BTitlesLocalizationPatch.Scan
                 int removed = 0;
                 foreach (var (dictKey, _) in BiomeRegistrar.ScannedBiomes)
                 {
-                    if (dictKey != null
+                    if (
+                        dictKey != null
                         && !BiomeRegistrar.PreScanKeys.Contains(dictKey)
-                        && biomeDict.Remove(dictKey))
+                        && biomeDict.Remove(dictKey)
+                    )
                         removed++;
                 }
                 if (removed > 0)
-                    mod.Logger.Info(Language.GetTextValue(
-                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.UnregisteredBiomes", removed));
+                    mod.Logger.Info(
+                        Language.GetTextValue(
+                            $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.UnregisteredBiomes",
+                            removed
+                        )
+                    );
             }
 
             // 移除检测函数

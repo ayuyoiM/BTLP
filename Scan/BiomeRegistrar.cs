@@ -1,11 +1,11 @@
 #nullable enable
-using BTitles;
-using BTitlesLocalizationPatch.Diagnostics;
-using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using BTitles;
+using BTitlesLocalizationPatch.Diagnostics;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Localization;
 using Terraria.ModLoader;
@@ -30,25 +30,36 @@ namespace BTitlesLocalizationPatch.Scan
             var biomes = new List<(string DictKey, ModBiome Biome)>();
 
             var instance = ResolveBTitlesInstance(mod);
-            if (instance == null) return;
+            if (instance == null)
+                return;
             var biomeDict = ResolveBiomeDictionary(instance, mod);
-            if (biomeDict == null) return;
+            if (biomeDict == null)
+                return;
             var checkFuncs = ResolveCheckFunctions(instance, mod);
-            if (checkFuncs == null) return;
+            if (checkFuncs == null)
+                return;
 
             // 复制到新 HashSet 避免扫描期间外部修改导致快照失真
             PreScanKeys = new HashSet<string>(biomeDict.Keys, biomeDict.Comparer);
 
             var result = ScanAllModBiomes(mod, biomeDict, enableStyling, biomes);
-            if (result == null) return;
+            if (result == null)
+                return;
 
             RegisteredCheckFunc = BuildDetectionFunction(result.AllBiomes, result.KeyMapping);
             checkFuncs.Insert(0, RegisteredCheckFunc);
             ScannedBiomes = biomes;
 
-            mod.Logger.Info(SafeFormat(Tr("ScanSummary"),
-                result.Added, result.Updated, result.Skipped,
-                biomeDict.Count, checkFuncs.Count));
+            mod.Logger.Info(
+                SafeFormat(
+                    Tr("ScanSummary"),
+                    result.Added,
+                    result.Updated,
+                    result.Skipped,
+                    biomeDict.Count,
+                    checkFuncs.Count
+                )
+            );
         }
 
         // ── 反射辅助
@@ -56,31 +67,49 @@ namespace BTitlesLocalizationPatch.Scan
         private static BiomeTitlesMod? ResolveBTitlesInstance(Mod mod)
         {
             var instance = BTitlesLocalizationPatch.InstanceField?.GetValue(null) as BiomeTitlesMod;
-            if (instance == null) mod.Logger.Error(Tr("InstanceNull"));
+            if (instance == null)
+                mod.Logger.Error(Tr("InstanceNull"));
             return instance;
         }
 
-        private static Dictionary<string, BiomeEntry>? ResolveBiomeDictionary(BiomeTitlesMod instance, Mod mod)
+        private static Dictionary<string, BiomeEntry>? ResolveBiomeDictionary(
+            BiomeTitlesMod instance,
+            Mod mod
+        )
         {
-            var dict = BTitlesLocalizationPatch.BiomeDictField?.GetValue(instance) as Dictionary<string, BiomeEntry>;
-            if (dict == null) mod.Logger.Error(Tr("DictNull"));
+            var dict =
+                BTitlesLocalizationPatch.BiomeDictField?.GetValue(instance)
+                as Dictionary<string, BiomeEntry>;
+            if (dict == null)
+                mod.Logger.Error(Tr("DictNull"));
             return dict;
         }
 
-        private static List<Func<Player, string>>? ResolveCheckFunctions(BiomeTitlesMod instance, Mod mod)
+        private static List<Func<Player, string>>? ResolveCheckFunctions(
+            BiomeTitlesMod instance,
+            Mod mod
+        )
         {
-            var list = BTitlesLocalizationPatch.CheckFuncsField?.GetValue(instance) as List<Func<Player, string>>;
-            if (list == null) mod.Logger.Error(Tr("CheckerNull"));
+            var list =
+                BTitlesLocalizationPatch.CheckFuncsField?.GetValue(instance)
+                as List<Func<Player, string>>;
+            if (list == null)
+                mod.Logger.Error(Tr("CheckerNull"));
             return list;
         }
 
         // ── 核心扫描
 
         private static ScanResult? ScanAllModBiomes(
-            Mod mod, Dictionary<string, BiomeEntry> biomeDict, bool enableStyling,
-            List<(string DictKey, ModBiome Biome)> scannedBiomes)
+            Mod mod,
+            Dictionary<string, BiomeEntry> biomeDict,
+            bool enableStyling,
+            List<(string DictKey, ModBiome Biome)> scannedBiomes
+        )
         {
-            int added = 0, updated = 0, skipped = 0;
+            int added = 0,
+                updated = 0,
+                skipped = 0;
             var allBiomes = new List<(Mod Mod, ModBiome Biome)>();
             var keyMapping = new Dictionary<string, string>();
 
@@ -92,22 +121,41 @@ namespace BTitlesLocalizationPatch.Scan
                         continue;
 
                     var modBiomes = targetMod.GetContent<ModBiome>().ToArray();
-                    if (modBiomes.Length == 0) continue;
+                    if (modBiomes.Length == 0)
+                        continue;
 
-                    mod.Logger.Info(SafeFormat(Tr("ScanningMod"), targetMod.Name, modBiomes.Length));
+                    mod.Logger.Info(
+                        SafeFormat(Tr("ScanningMod"), targetMod.Name, modBiomes.Length)
+                    );
 
                     foreach (var biome in modBiomes)
                     {
                         // 没重写 IsBiomeActive 的占位群系（如嘉登实验室）注册了也检测不到
                         if (IsPlaceholderBiome(biome))
                         {
-                            mod.Logger.Info(SafeFormat(Tr("SkippedPlaceholder"), biome.Name, biome.DisplayName.Value));
+                            mod.Logger.Info(
+                                SafeFormat(
+                                    Tr("SkippedPlaceholder"),
+                                    biome.Name,
+                                    biome.DisplayName.Value
+                                )
+                            );
                             skipped++;
                             continue;
                         }
 
                         allBiomes.Add((targetMod, biome));
-                        RegisterOrUpdateBiome(biomeDict, targetMod, biome, enableStyling, keyMapping, scannedBiomes, mod, ref added, ref updated);
+                        RegisterOrUpdateBiome(
+                            biomeDict,
+                            targetMod,
+                            biome,
+                            enableStyling,
+                            keyMapping,
+                            scannedBiomes,
+                            mod,
+                            ref added,
+                            ref updated
+                        );
                     }
                 }
             }
@@ -127,7 +175,9 @@ namespace BTitlesLocalizationPatch.Scan
         */
         private static bool IsPlaceholderBiome(ModBiome modBiome)
         {
-            var method = modBiome.GetType().GetMethod("IsBiomeActive", BindingFlags.Public | BindingFlags.Instance);
+            var method = modBiome
+                .GetType()
+                .GetMethod("IsBiomeActive", BindingFlags.Public | BindingFlags.Instance);
             return method != null && method.DeclaringType == typeof(ModBiome);
         }
 
@@ -137,10 +187,16 @@ namespace BTitlesLocalizationPatch.Scan
         已有条目不动颜色/图标——BTitles 或之前扫描已有配色
         */
         private static void RegisterOrUpdateBiome(
-            Dictionary<string, BiomeEntry> biomeDict, Mod targetMod, ModBiome modBiome, bool enableStyling,
+            Dictionary<string, BiomeEntry> biomeDict,
+            Mod targetMod,
+            ModBiome modBiome,
+            bool enableStyling,
             Dictionary<string, string> keyMapping,
             List<(string DictKey, ModBiome Biome)> scannedBiomes,
-            Mod mod, ref int added, ref int updated)
+            Mod mod,
+            ref int added,
+            ref int updated
+        )
         {
             string namespacedKey = $"{targetMod.Name}.{modBiome.Name}";
 
@@ -167,11 +223,17 @@ namespace BTitlesLocalizationPatch.Scan
                 biomeDict[namespacedKey] = newEntry;
                 scannedBiomes.Add((namespacedKey, modBiome));
                 added++;
-                mod.Logger.Info(SafeFormat(Tr("NewBiome"), modBiome.Name, modBiome.DisplayName.Value));
+                mod.Logger.Info(
+                    SafeFormat(Tr("NewBiome"), modBiome.Name, modBiome.DisplayName.Value)
+                );
             }
         }
 
-        private static BiomeEntry BuildNewEntry(ModBiome modBiome, Mod targetMod, bool enableStyling)
+        private static BiomeEntry BuildNewEntry(
+            ModBiome modBiome,
+            Mod targetMod,
+            bool enableStyling
+        )
         {
             var entry = new BiomeEntry
             {
@@ -184,7 +246,11 @@ namespace BTitlesLocalizationPatch.Scan
 
             if (enableStyling)
             {
-                BiomeStyleHelper.GetTitleColors(modBiome, out Color titleColor, out Color strokeColor);
+                BiomeStyleHelper.GetTitleColors(
+                    modBiome,
+                    out Color titleColor,
+                    out Color strokeColor
+                );
                 entry.TitleColor = titleColor;
                 entry.StrokeColor = strokeColor;
             }
@@ -200,22 +266,29 @@ namespace BTitlesLocalizationPatch.Scan
         // ── 检测函数
 
         private static Func<Player, string> BuildDetectionFunction(
-            List<(Mod Mod, ModBiome Biome)> allBiomes, Dictionary<string, string> keyMapping)
+            List<(Mod Mod, ModBiome Biome)> allBiomes,
+            Dictionary<string, string> keyMapping
+        )
         {
             return player =>
             {
-
                 foreach (var (sourceMod, biome) in allBiomes)
                 {
                     try
                     {
                         if (biome.IsBiomeActive(player))
-                            return keyMapping.TryGetValue($"{sourceMod.Name}.{biome.Name}", out var key)
-                                ? key : biome.Name;
+                            return keyMapping.TryGetValue(
+                                $"{sourceMod.Name}.{biome.Name}",
+                                out var key
+                            )
+                                ? key
+                                : biome.Name;
                     }
                     catch (Exception ex)
                     {
-                        DebugLog.Warn(SafeFormat(Tr("DetectionEx"), sourceMod.Name, biome.Name, ex.Message));
+                        DebugLog.Warn(
+                            SafeFormat(Tr("DetectionEx"), sourceMod.Name, biome.Name, ex.Message)
+                        );
                     }
                 }
                 return "";
@@ -226,9 +299,10 @@ namespace BTitlesLocalizationPatch.Scan
 
         private static void Rollback(Dictionary<string, BiomeEntry> biomeDict)
         {
-            var addedKeys = PreScanKeys != null
-                ? biomeDict.Keys.Where(k => !PreScanKeys.Contains(k)).ToList()
-                : new List<string>();
+            var addedKeys =
+                PreScanKeys != null
+                    ? biomeDict.Keys.Where(k => !PreScanKeys.Contains(k)).ToList()
+                    : new List<string>();
             foreach (var key in addedKeys)
                 biomeDict.Remove(key);
 
@@ -245,15 +319,24 @@ namespace BTitlesLocalizationPatch.Scan
         // HJSON 本地化值可能含有未转义 { } 导致 FormatException，兜底返回原模板
         private static string SafeFormat(string format, params object[] args)
         {
-            try { return string.Format(format, args); }
-            catch (FormatException) { return format; }
+            try
+            {
+                return string.Format(format, args);
+            }
+            catch (FormatException)
+            {
+                return format;
+            }
         }
 
         // ── 内部数据传输
 
         private sealed record ScanResult(
-            int Added, int Updated, int Skipped,
+            int Added,
+            int Updated,
+            int Skipped,
             List<(Mod Mod, ModBiome Biome)> AllBiomes,
-            Dictionary<string, string> KeyMapping);
+            Dictionary<string, string> KeyMapping
+        );
     }
 }

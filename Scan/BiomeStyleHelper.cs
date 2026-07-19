@@ -1,8 +1,8 @@
+using System;
 using BTitlesLocalizationPatch.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
-using System;
 using Terraria.Localization;
 using Terraria.ModLoader;
 
@@ -12,7 +12,11 @@ namespace BTitlesLocalizationPatch.Scan
     internal static class BiomeStyleHelper
     {
         // 自动取色策略：BackgroundColor → 哈希色 → 白色回退
-        public static void GetTitleColors(ModBiome biome, out Color titleColor, out Color strokeColor)
+        public static void GetTitleColors(
+            ModBiome biome,
+            out Color titleColor,
+            out Color strokeColor
+        )
         {
             // 外部调用可能传来 null，防御到结果级别
             if (biome == null)
@@ -36,13 +40,14 @@ namespace BTitlesLocalizationPatch.Scan
             strokeColor = new Color(
                 (int)(titleColor.R * 0.35f),
                 (int)(titleColor.G * 0.35f),
-                (int)(titleColor.B * 0.35f));
+                (int)(titleColor.B * 0.35f)
+            );
         }
 
         /*
-		尝试加载 BestiaryIcon
-		加载失败时静默返回 null，不影响群系注册流程
-		*/
+        尝试加载 BestiaryIcon
+        加载失败时静默返回 null，不影响群系注册流程
+        */
         public static Texture2D TryLoadIcon(ModBiome biome)
         {
             if (biome == null)
@@ -57,17 +62,21 @@ namespace BTitlesLocalizationPatch.Scan
             }
             catch (Exception ex)
             {
-                DebugLog.Warn(Language.GetTextValue(
-                    $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.IconLoadFailed",
-                    biome.FullName, ex.Message));
+                DebugLog.Warn(
+                    Language.GetTextValue(
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.IconLoadFailed",
+                        biome.FullName,
+                        ex.Message
+                    )
+                );
                 return null;
             }
         }
 
         /*
-		基于键名的 HSL 色盘兜底
-		用 FNV-1a 决定色相，固定饱和度与亮度
-		*/
+        基于键名的 HSL 色盘兜底
+        用 FNV-1a 决定色相，固定饱和度与亮度
+        */
         public static Color GetFallbackColor(string key)
         {
             if (string.IsNullOrEmpty(key))
@@ -92,9 +101,12 @@ namespace BTitlesLocalizationPatch.Scan
         private static Color HslToRgb(float h, float s, float l)
         {
             // 防御：NaN/Infinity 兜底，防止哈希异常值破坏颜色计算
-            if (float.IsNaN(h) || float.IsInfinity(h)) h = 0f;
-            if (float.IsNaN(s) || float.IsInfinity(s)) s = 0.5f;
-            if (float.IsNaN(l) || float.IsInfinity(l)) l = 0.6f;
+            if (float.IsNaN(h) || float.IsInfinity(h))
+                h = 0f;
+            if (float.IsNaN(s) || float.IsInfinity(s))
+                s = 0.5f;
+            if (float.IsNaN(l) || float.IsInfinity(l))
+                l = 0.6f;
 
             float c = (1f - Math.Abs(2f * l - 1f)) * s;
             float x = c * (1f - Math.Abs((h / 60f) % 2f - 1f));
@@ -111,12 +123,13 @@ namespace BTitlesLocalizationPatch.Scan
             return new Color(
                 ClampByte((r + m) * 255f),
                 ClampByte((g + m) * 255f),
-                ClampByte((b + m) * 255f));
+                ClampByte((b + m) * 255f)
+            );
         }
 
         private static byte ClampByte(float value)
         {
-            int v = (int)(value + 0.5f);  // 算术舍入，避免银行家舍入的不一致
+            int v = (int)(value + 0.5f); // 算术舍入，避免银行家舍入的不一致
             return (byte)(v < 0 ? 0 : (v > 255 ? 255 : v));
         }
     }

@@ -1,10 +1,10 @@
 #nullable enable
-using BTitles;
-using BTitlesLocalizationPatch.Diagnostics;
-using MonoMod.RuntimeDetour;
 using System;
 using System.Linq;
 using System.Reflection;
+using BTitles;
+using BTitlesLocalizationPatch.Diagnostics;
+using MonoMod.RuntimeDetour;
 using Terraria;
 using Terraria.Localization;
 using Terraria.ModLoader;
@@ -37,7 +37,8 @@ namespace BTitlesLocalizationPatch
 
         public override void Load()
         {
-            if (Main.dedServ) return;
+            if (Main.dedServ)
+                return;
 
             if (_loaded)
             {
@@ -65,24 +66,35 @@ namespace BTitlesLocalizationPatch
         // 预缓存反射字段，失败时不影响功能只打 Warn
         private void CacheReflectionFields()
         {
-            _instanceField = typeof(BiomeTitlesMod).GetField("Instance",
-                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-            if (_instanceField == null) Logger.Warn("Failed to reflect Instance field");
+            _instanceField = typeof(BiomeTitlesMod).GetField(
+                "Instance",
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
+            );
+            if (_instanceField == null)
+                Logger.Warn("Failed to reflect Instance field");
 
-            _biomeDictField = typeof(BiomeTitlesMod).GetField("BiomeDictionary",
-                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-            if (_biomeDictField == null) Logger.Warn("Failed to reflect BiomeDictionary field");
+            _biomeDictField = typeof(BiomeTitlesMod).GetField(
+                "BiomeDictionary",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public
+            );
+            if (_biomeDictField == null)
+                Logger.Warn("Failed to reflect BiomeDictionary field");
 
-            _checkFuncsField = typeof(BiomeTitlesMod).GetField("BiomeCheckFunctions",
-                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-            if (_checkFuncsField == null) Logger.Warn("Failed to reflect BiomeCheckFunctions field");
+            _checkFuncsField = typeof(BiomeTitlesMod).GetField(
+                "BiomeCheckFunctions",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public
+            );
+            if (_checkFuncsField == null)
+                Logger.Warn("Failed to reflect BiomeCheckFunctions field");
         }
 
         // 签名指纹验证：防止 BTitles 更新改变方法签名导致 new Hook() 崩溃
         private void InstallHookWithFingerprint()
         {
             MethodInfo? getTitleMethod = typeof(BiomeTitlesUI).GetMethod(
-                "GetActualTitleName", BindingFlags.NonPublic | BindingFlags.Instance);
+                "GetActualTitleName",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
 
             if (getTitleMethod == null)
             {
@@ -94,14 +106,21 @@ namespace BTitlesLocalizationPatch
             if (!ValidateMethodSignature(getTitleMethod, _expectedHookSignature))
             {
                 HookInstalled = false;
-                Logger.Error($"Hook signature mismatch: actual {FormatMethodSignature(getTitleMethod)}, expected BiomeEntry");
+                Logger.Error(
+                    $"Hook signature mismatch: actual {FormatMethodSignature(getTitleMethod)}, expected BiomeEntry"
+                );
                 return;
             }
 
             _getActualTitleNameHook = new Hook(
                 getTitleMethod,
-                new Func<Func<BiomeTitlesUI, BiomeEntry, string>, BiomeTitlesUI, BiomeEntry, string>(
-                    BiomeNameHook.GetActualTitleNamePrefixHook));
+                new Func<
+                    Func<BiomeTitlesUI, BiomeEntry, string>,
+                    BiomeTitlesUI,
+                    BiomeEntry,
+                    string
+                >(BiomeNameHook.GetActualTitleNamePrefixHook)
+            );
             HookInstalled = true;
             Logger.Info("GetActualTitleName Detour patch applied successfully");
         }
@@ -169,13 +188,15 @@ namespace BTitlesLocalizationPatch
         // 主菜单时 BTitles Instance 为 null，操作会静默跳过
         internal static void ApplyConfigChangeStyle(bool enabled)
         {
-            if (!HookInstalled) return;
+            if (!HookInstalled)
+                return;
             Scan.ScanLifecycle.Restyle(enabled);
         }
 
         internal static void ApplyConfigChangeScan(bool enabled)
         {
-            if (!HookInstalled) return;
+            if (!HookInstalled)
+                return;
 
             BiomeNameHook.TranslationCache.Clear();
 
@@ -185,8 +206,11 @@ namespace BTitlesLocalizationPatch
                 var mod = ModContent.GetInstance<BTitlesLocalizationPatch>();
                 if (mod != null && config != null)
                 {
-                    mod.Logger.Info(Language.GetTextValue(
-                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanToggleOn"));
+                    mod.Logger.Info(
+                        Language.GetTextValue(
+                            $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanToggleOn"
+                        )
+                    );
                     Scan.BiomeRegistrar.Run(mod, config.EnableAutoStyling);
                 }
             }
@@ -195,8 +219,11 @@ namespace BTitlesLocalizationPatch
                 var mod = ModContent.GetInstance<BTitlesLocalizationPatch>();
                 if (mod != null)
                 {
-                    mod.Logger.Info(Language.GetTextValue(
-                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanToggleOff"));
+                    mod.Logger.Info(
+                        Language.GetTextValue(
+                            $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanToggleOff"
+                        )
+                    );
                     Scan.ScanLifecycle.UnregisterAll(mod);
                 }
             }
