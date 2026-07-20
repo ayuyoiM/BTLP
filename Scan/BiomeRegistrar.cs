@@ -325,8 +325,15 @@ namespace BTitlesLocalizationPatch.Scan
             {
                 return string.Format(format, args);
             }
-            catch (FormatException)
+            catch (FormatException ex)
             {
+                DebugLog.Warn(
+                    Language.GetTextValue(
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.FormatError",
+                        format,
+                        ex.Message
+                    )
+                );
                 return format;
             }
         }

@@ -25,6 +25,10 @@ Logs: {
 	RestyledOn: Restyled {0} biomes (auto-styling ON)
 	RestyledOff: Reset colors for {0} biomes (auto-styling OFF)
 	UnregisteredBiomes: Scan disabled: unregistered {0} biome(s) from dictionary
+	FormatError: Failed to format log template: template="{0}" error={1}
+	GetEnglishTranslationFailed: Failed to read English translation for "{0}": {1}
+	SampleColorFailed: Failed to sample color from icon ({0}x{1}): {2}
+	ScanConfigNull: BTitlesConfig is null, scan toggle ON skipped
 }
 
 SourceTags: {

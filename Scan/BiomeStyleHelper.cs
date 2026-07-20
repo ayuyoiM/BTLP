@@ -100,8 +100,16 @@ namespace BTitlesLocalizationPatch.Scan
                     pixels.Length
                 );
             }
-            catch
+            catch (Exception ex)
             {
+                DebugLog.Warn(
+                    Language.GetTextValue(
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.SampleColorFailed",
+                        icon.Width,
+                        icon.Height,
+                        ex.Message
+                    )
+                );
                 return Color.White;
             }
 

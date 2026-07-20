@@ -276,7 +276,16 @@ namespace BTitlesLocalizationPatch
                 )
                     return englishValue;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Diagnostics.DebugLog.Warn(
+                    Language.GetTextValue(
+                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.GetEnglishTranslationFailed",
+                        locKey,
+                        ex.Message
+                    )
+                );
+            }
             return null;
         }
     }

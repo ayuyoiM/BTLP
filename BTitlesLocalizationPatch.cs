@@ -262,7 +262,15 @@ namespace BTitlesLocalizationPatch
             if (enabled)
             {
                 var config = ModContent.GetInstance<BTitlesConfig>();
-                if (config != null)
+                if (config == null)
+                {
+                    mod.Logger.Warn(
+                        Language.GetTextValue(
+                            $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.ScanConfigNull"
+                        )
+                    );
+                }
+                else
                 {
                     mod.Logger.Info(
                         Language.GetTextValue(

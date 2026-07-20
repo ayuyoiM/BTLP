@@ -25,6 +25,10 @@ Logs: {
 	RestyledOn: 已配色 {0} 个群系
 	RestyledOff: 已重置 {0} 个群系的颜色
 	UnregisteredBiomes: 已从字典卸载 {0} 个群系
+	FormatError: 格式化日志模板失败：模板="{0}" 错误={1}
+	GetEnglishTranslationFailed: 读取本地化键 "{0}" 的英文翻译失败：{1}
+	SampleColorFailed: 从图标 ({0}x{1}) 采样主色失败：{2}
+	ScanConfigNull: 未获取到配置实例，扫描启用操作已跳过
 }
 
 SourceTags: {
