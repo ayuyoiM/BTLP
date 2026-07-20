@@ -1,11 +1,10 @@
 #nullable enable
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using BTitles;
 using BTitlesLocalizationPatch.Scan;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria.Localization;
 
 namespace BTitlesLocalizationPatch
@@ -62,7 +61,16 @@ namespace BTitlesLocalizationPatch
             // 回退配色：TitleColor 透明时图标采样
             if (biomeEntry.TitleColor == default && biomeEntry.Icon != null)
             {
-                biomeEntry.TitleColor = BiomeStyleHelper.SampleDominantColor(biomeEntry.Icon);
+                // 热重载后 GPU 资源释放，图标引用可能已失效
+                if (biomeEntry.Icon.IsDisposed)
+                {
+                    biomeEntry.Icon = TryReloadIcon(biomeEntry.Key);
+                }
+
+                if (biomeEntry.Icon != null && !biomeEntry.Icon.IsDisposed)
+                {
+                    biomeEntry.TitleColor = BiomeStyleHelper.SampleDominantColor(biomeEntry.Icon);
+                }
             }
 
             // 翻译回退链：先命中者胜出
@@ -270,12 +278,26 @@ namespace BTitlesLocalizationPatch
                 || name.StartsWith("ru");
         }
 
+        // 尝试从扫描记录中重加载已释放的图标
+        private static Texture2D? TryReloadIcon(string? biomeKey)
+        {
+            if (string.IsNullOrEmpty(biomeKey) || BiomeRegistrar.ScannedBiomes == null)
+                return null;
+
+            foreach (var (dictKey, biome) in BiomeRegistrar.ScannedBiomes)
+            {
+                if (biome?.Name == biomeKey || dictKey == biomeKey)
+                    return BiomeStyleHelper.TryLoadIcon(biome);
+            }
+            return null;
+        }
+
         // 判断字符串是否全部由 ASCII 字符组成（<= 127）
         private static bool IsPureAscii(string value)
         {
-            foreach (char c in value)
+            for (int i = 0; i < value.Length; i++)
             {
-                if (c > 127)
+                if (value[i] > 127)
                     return false;
             }
             return true;

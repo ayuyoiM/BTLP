@@ -75,7 +75,7 @@ namespace BTitlesLocalizationPatch.Scan
         public static Color SampleDominantColor(Texture2D icon)
         {
             if (icon == null || icon.IsDisposed || icon.Width <= 1 || icon.Height <= 1)
-                return default;
+                return Color.Gray;
 
             int sampleWidth = Math.Min(icon.Width, 256);
             int sampleHeight = Math.Min(icon.Height, 256);
@@ -101,7 +101,7 @@ namespace BTitlesLocalizationPatch.Scan
                         ex.Message
                     )
                 );
-                return default;
+                return Color.Gray;
             }
 
             var colorFrequency = new Dictionary<int, int>();
