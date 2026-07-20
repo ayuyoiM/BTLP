@@ -8,10 +8,10 @@ This mod hooks into the title resolution to automate that process — reading tr
 [h2]Features[/h2]
 [list]
 [*]Biome Name Localization — Automatically loads each mod's translation files to display localized biome names
-[*]Source Mod Priority — Prioritizes the biome's own mod localization (supports translation mods)
+[*]Source Mod Priority — Prioritizes the biome's own mod localization (supports translation mods); in non-Latin languages, skips plain ASCII fallback values and continues searching BTitles or this patch's translations
 [*]Extra Translations — Provides missing Biome Titles translations (e.g. Aether)
-[*]Auto Scan — Automatically discovers unregistered ModBiomes and adds them to Biome Titles [i](disabled by default)[/i]
-[*]Auto Styling — Assigns title colors to newly registered biomes [i](disabled by default)[/i]
+[*]Auto Scan — Automatically discovers unregistered ModBiomes and adds them to Biome Titles; scan summary shows pending-color count [i](disabled by default)[/i]
+[*]Auto Styling — Assigns title colors to newly registered biomes: prefers the mod-defined BackgroundColor, falls back to icon sampling at runtime [i](disabled by default)[/i]
 [/list]
 
 [h2]Name Resolution Order[/h2]
