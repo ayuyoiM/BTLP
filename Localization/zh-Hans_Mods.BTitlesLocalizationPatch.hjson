@@ -2,25 +2,40 @@ ExtraTitles.Terraria.Aether: 以太
 
 Logs: {
 	ScanEnabled: 已启用扫描新群系，开始扫描……
+	BiomeEntry: 群系：Key={0} 标题={1}
+	BiomeDetail: 源={0} 图标={1} 翻译来源={2}
+	IconPresent: 有（{0}x{1}）
+	IconNull: 无
+	CustomOverride: 自定义覆盖：{0} → {1}
 	CheckerNull: 未获取到群系检测函数列表，自动发现功能已禁用
 	ConfigNull: 未获取到配置实例，扫描已跳过
 	DetectionEx: 检测 [{0}] 模组的 [{1}] 群系时出错: {2}
 	DictNull: 未获取到群系字典，自动发现功能已禁用
 	DictStats: 群系字典共 {0} 项，检测函数共 {1} 个
-	HookApplied: GetActualTitleName Detour 补丁已成功应用
-	HookGetTitleNameFailed: 未找到 BiomeTitlesUI.GetActualTitleName 方法，Hook 注册失败
-	HookSignatureMismatch: Hook 签名不匹配：实际 {0}，预期 {1}，本地化功能已降级
+	BiomeColor: RGB（{0},{1},{2}）
 	IconLoadFailed: 加载群系 [{0}] 的图标时失败: {1}
-	LoadReentry: 模组加载被重复调用，已跳过
 	InstanceNull: 未获取到 BTitles 主模组实例，自动发现功能已禁用
-	NewBiome: 新增群系: [{0}] → {1}
-	Prewarmed: 预热配色 {0} 个已有群系
-	ReflectCheckerNull: 反射获取检测函数字段失败
-	ReflectDictNull: 反射获取群系字典字段失败
-	ReflectInstanceNull: 反射获取主模组实例字段失败
+	NewBiome: 新增群系: [{0}] → {1}{2}
+	DefaultColorMarker: （未配色）
 	ScanningMod: 正在扫描模组 [{0}]，发现 {1} 个模组群系
 	SkippedPlaceholder: 跳过占位群系: [{0}] → {1}（未重写检测方法）
-	ScanSummary: 扫描完毕：{0} 新增，{1} 更新，{2} 跳过 | 字典 {3} 项，检测 {4} 个
+	ScanSummary: 扫描完毕：{0} 新增（{5} 个群系未配色），{1} 更新，{2} 跳过 | 字典 {3} 项，检测 {4} 个
+	ScanToggleOn: 已启用扫描，开始扫描……
+	ScanToggleOff: 已禁用扫描，卸载已注册的群系……
+	RestyledOn: 已配色 {0} 个群系
+	RestyledOff: 已重置 {0} 个群系的颜色
+	UnregisteredBiomes: 已从字典卸载 {0} 个群系
+	FormatError: 格式化日志模板失败：模板="{0}" 错误={1}
+	SampleColorFailed: 从图标 （{0}x{1}） 采样主色失败：{2}
+	ScanConfigNull: 未获取到配置实例，扫描启用操作已跳过
+}
+
+SourceTags: {
+	CustomName: 自定义
+	ModLocalization: 源模组
+	BTitles: BTitles
+	ExtraTitles: 补充翻译
+	Fallback: 默认
 }
 
 Configs: {
@@ -34,13 +49,7 @@ Configs: {
 
 		EnableScan: {
 			Label: 扫描新群系
-			Tooltip:
-				'''
-				扫描各模组中未被原模组收录的模组群系（ModBiome）并添加到检测列表
-
-				开 → 需要重载才会执行扫描
-				关 → 不需要重载，但已注册的群系仍会继续显示
-				'''
+			Tooltip: 扫描各模组中未被原模组收录的模组群系（ModBiome）并添加到检测列表
 		}
 
 		EnableAutoStyling: {

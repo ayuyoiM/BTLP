@@ -1,15 +1,14 @@
+#nullable enable
 using System.ComponentModel;
 using Terraria.ModLoader.Config;
 
 namespace BTitlesLocalizationPatch
 {
-    /* 玩家配置类，可在 Mod 设置中调整 */
     public class BTitlesConfig : ModConfig
     {
         public override ConfigScope Mode => ConfigScope.ClientSide;
 
         [Header("Scan")]
-
         [DefaultValue(false)]
         [LabelKey("$Mods.BTitlesLocalizationPatch.Configs.BTitlesConfig.EnableScan.Label")]
         [TooltipKey("$Mods.BTitlesLocalizationPatch.Configs.BTitlesConfig.EnableScan.Tooltip")]
@@ -21,10 +20,27 @@ namespace BTitlesLocalizationPatch
         public bool EnableAutoStyling { get; set; }
 
         [Header("Debug")]
-
         [DefaultValue(false)]
         [LabelKey("$Mods.BTitlesLocalizationPatch.Configs.BTitlesConfig.EnableDebugLog.Label")]
         [TooltipKey("$Mods.BTitlesLocalizationPatch.Configs.BTitlesConfig.EnableDebugLog.Tooltip")]
         public bool EnableDebugLog { get; set; }
+
+        private bool _lastAutoStyling;
+        private bool _lastScan;
+
+        // tModLoader 确认保存后通知，直接执行配置变更
+        // 主菜单时 BTitles 未加载，操作会静默跳过；进世界后 PostSetupContent 处理初始状态
+        public override void OnChanged()
+        {
+            bool styleCurrent = EnableAutoStyling;
+            if (styleCurrent != _lastAutoStyling)
+                BTitlesLocalizationPatch.ApplyConfigChangeStyle(styleCurrent);
+            _lastAutoStyling = styleCurrent;
+
+            bool scanCurrent = EnableScan;
+            if (scanCurrent != _lastScan)
+                BTitlesLocalizationPatch.ApplyConfigChangeScan(scanCurrent);
+            _lastScan = scanCurrent;
+        }
     }
 }

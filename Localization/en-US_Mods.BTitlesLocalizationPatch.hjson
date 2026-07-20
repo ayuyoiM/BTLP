@@ -2,25 +2,40 @@ ExtraTitles.Terraria.Aether: Aether
 
 Logs: {
 	ScanEnabled: Biome auto-scan enabled, starting scan...
+	BiomeEntry: Biome: Key={0} Title={1}
+	BiomeDetail: Scope={0} Icon={1} Source={2}
+	IconPresent: yes({0}x{1})
+	IconNull: no
+	CustomOverride: Custom override: {0} → {1}
 	CheckerNull: BiomeCheckFunctions is null
 	ConfigNull: BTitlesConfig is null, scan skipped
 	DetectionEx: Exception detecting {0}.{1}: {2}
 	DictNull: BiomeDictionary is null
 	DictStats: Dictionary has {0} entries, {1} check functions
-	HookApplied: GetActualTitleName Detour patch applied successfully
-	HookGetTitleNameFailed: Failed to find BiomeTitlesUI.GetActualTitleName
-	HookSignatureMismatch: Hook signature mismatch: actual {0}, expected {1}, localization degraded
+	BiomeColor: RGB({0},{1},{2})
 	IconLoadFailed: Failed to load icon for biome [{0}]: {1}
-	LoadReentry: Mod Load called again, skipped
 	InstanceNull: Instance is null
-	NewBiome: New: {0} → {1}
-	Prewarmed: Pre-warmed colors for {0} existing biomes
-	ReflectCheckerNull: Failed to reflect BiomeCheckFunctions field
-	ReflectDictNull: Failed to reflect BiomeDictionary field
-	ReflectInstanceNull: Failed to reflect Instance field
+	NewBiome: New: {0} → {1}{2}
+	DefaultColorMarker: (default color)
 	ScanningMod: Scanning mod [{0}] with {1} ModBiomes
 	SkippedPlaceholder: Skipped placeholder biome: [{0}] {1} (no IsBiomeActive override)
-	ScanSummary: Scan done: {0} added, {1} updated, {2} skipped | {3} entries, {4} checks
+	ScanSummary: Scan done: {0} added({5} pending color), {1} updated, {2} skipped | {3} entries, {4} checks
+	ScanToggleOn: Scan toggled ON, starting scan...
+	ScanToggleOff: Scan toggled OFF, unregistering scanned biomes...
+	RestyledOn: Restyled {0} biomes (auto-styling ON)
+	RestyledOff: Reset colors for {0} biomes (auto-styling OFF)
+	UnregisteredBiomes: Scan disabled: unregistered {0} biome(s) from dictionary
+	FormatError: Failed to format log template: template="{0}" error={1}
+	SampleColorFailed: Failed to sample color from icon ({0}x{1}): {2}
+	ScanConfigNull: BTitlesConfig is null, scan toggle ON skipped
+}
+
+SourceTags: {
+	CustomName: Custom
+	ModLocalization: Source Mod
+	BTitles: Biome Titles
+	ExtraTitles: Extra
+	Fallback: Default
 }
 
 Configs: {
@@ -34,13 +49,7 @@ Configs: {
 
 		EnableScan: {
 			Label: Scan for new biomes
-			Tooltip:
-				'''
-				Scan for ModBiome in each module that were not included in the original module, and add them to the detection list
-
-				ON → Reload required to trigger the scan
-				OFF → No reload needed, but registered biomes will still show up
-				'''
+			Tooltip: Scan for ModBiome in each module that were not included in the original module, and add them to the detection list
 		}
 
 		EnableAutoStyling: {

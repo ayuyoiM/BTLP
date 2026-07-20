@@ -8,25 +8,25 @@ This mod hooks into the title resolution to automate that process — reading tr
 [h2]Features[/h2]
 [list]
 [*]Biome Name Localization — Automatically loads each mod's translation files to display localized biome names
-[*]Source Mod Priority — Prioritizes the biome's own mod localization (supports translation mods)
+[*]Source Mod Priority — Prioritizes the biome's own mod localization (supports translation mods); in non-Latin languages, skips plain ASCII fallback values and continues searching BTitles or this patch's translations
 [*]Extra Translations — Provides missing Biome Titles translations (e.g. Aether)
-[*]Auto Scan — Automatically discovers unregistered ModBiomes and adds them to Biome Titles [i](disabled by default)[/i]
-[*]Auto Styling — Assigns title colors to newly registered biomes [i](disabled by default)[/i]
+[*]Auto Scan — Automatically discovers unregistered ModBiomes and adds them to Biome Titles; scan summary shows pending-color count [i](disabled by default)[/i]
+[*]Auto Styling — Assigns title colors to newly registered biomes: prefers the mod-defined BackgroundColor, falls back to icon sampling at runtime [i](disabled by default)[/i]
 [/list]
 
 [h2]Name Resolution Order[/h2]
-The mod looks up biome names in the following priority order, returning the first match:
+The mod looks up biome names in the following priority order. Once a translation is found, the mod checks for a custom override; otherwise it continues down the chain:
 [list=1]
-[*]User Custom — Names manually specified in the mod config
 [*]Source Mod Localization — Reads from the biome's own mod localization files
 [*]Biome Titles Localization — Uses Biome Titles' manually curated translations
 [*]Extra Translations — Translations provided by this patch (e.g. Aether)
+[*]User Custom Override — After any of the above hits, checks if a custom name is set in config (overrides if found)
 [*]Original Name — Falls back to the original English name if nothing else matches
 [/list]
 
 [h2]Configuration[/h2]
 [list]
-[*]Scan for new biomes — Auto-discover and register unregistered ModBiomes (requires reload)
+[*]Scan for new biomes — Auto-discover and register unregistered ModBiomes into the dictionary (takes effect immediately after saving)
 [*]Color Scheme — Assign title colors to newly added biomes (requires Scan enabled)
 [*]Debug logs — Output debug info to client.log for troubleshooting
 [/list]
