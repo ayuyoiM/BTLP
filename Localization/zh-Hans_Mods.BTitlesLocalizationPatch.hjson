@@ -4,7 +4,7 @@ Logs: {
 	ScanEnabled: 已启用扫描新群系，开始扫描……
 	BiomeEntry: 群系：Key={0} 标题={1}
 	BiomeDetail: 源={0} 图标={1} 翻译来源={2}
-	IconPresent: 有({0}x{1})
+	IconPresent: 有（{0}x{1}）
 	IconNull: 无
 	CustomOverride: 自定义覆盖：{0} → {1}
 	CheckerNull: 未获取到群系检测函数列表，自动发现功能已禁用
@@ -12,21 +12,21 @@ Logs: {
 	DetectionEx: 检测 [{0}] 模组的 [{1}] 群系时出错: {2}
 	DictNull: 未获取到群系字典，自动发现功能已禁用
 	DictStats: 群系字典共 {0} 项，检测函数共 {1} 个
-	NoBiomeColor: 群系 [{0}] 没有返回颜色，使用默认配色
-	BiomeColor: RGB({0},{1},{2})
+	BiomeColor: RGB（{0},{1},{2}）
 	IconLoadFailed: 加载群系 [{0}] 的图标时失败: {1}
 	InstanceNull: 未获取到 BTitles 主模组实例，自动发现功能已禁用
-	NewBiome: 新增群系: [{0}] → {1}
+	NewBiome: 新增群系: [{0}] → {1}{2}
+	DefaultColorMarker: （未配色）
 	ScanningMod: 正在扫描模组 [{0}]，发现 {1} 个模组群系
 	SkippedPlaceholder: 跳过占位群系: [{0}] → {1}（未重写检测方法）
-	ScanSummary: 扫描完毕：{0} 新增，{1} 更新，{2} 跳过 | 字典 {3} 项，检测 {4} 个
+	ScanSummary: 扫描完毕：{0} 新增（{5} 个群系未配色），{1} 更新，{2} 跳过 | 字典 {3} 项，检测 {4} 个
 	ScanToggleOn: 已启用扫描，开始扫描……
 	ScanToggleOff: 已禁用扫描，卸载已注册的群系……
 	RestyledOn: 已配色 {0} 个群系
 	RestyledOff: 已重置 {0} 个群系的颜色
 	UnregisteredBiomes: 已从字典卸载 {0} 个群系
 	FormatError: 格式化日志模板失败：模板="{0}" 错误={1}
-	SampleColorFailed: 从图标 ({0}x{1}) 采样主色失败：{2}
+	SampleColorFailed: 从图标 （{0}x{1}） 采样主色失败：{2}
 	ScanConfigNull: 未获取到配置实例，扫描启用操作已跳过
 }
 

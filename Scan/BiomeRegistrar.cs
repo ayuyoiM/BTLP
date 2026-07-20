@@ -60,7 +60,8 @@ namespace BTitlesLocalizationPatch.Scan
                     scanResult.Updated,
                     scanResult.Skipped,
                     biomeDict.Count,
-                    checkFuncs.Count
+                    checkFuncs.Count,
+                    scanResult.PendingColor
                 )
             );
         }
@@ -112,7 +113,8 @@ namespace BTitlesLocalizationPatch.Scan
         {
             int added = 0,
                 updated = 0,
-                skipped = 0;
+                skipped = 0,
+                pendingColor = 0;
             var allBiomes = new List<(Mod Mod, ModBiome Biome)>();
             var keyMapping = new Dictionary<string, string>();
 
@@ -157,7 +159,8 @@ namespace BTitlesLocalizationPatch.Scan
                             scannedBiomes,
                             mod,
                             ref added,
-                            ref updated
+                            ref updated,
+                            ref pendingColor
                         );
                     }
                 }
@@ -169,7 +172,7 @@ namespace BTitlesLocalizationPatch.Scan
                 return null;
             }
 
-            return new ScanResult(added, updated, skipped, allBiomes, keyMapping);
+            return new ScanResult(added, updated, skipped, pendingColor, allBiomes, keyMapping);
         }
 
         /*
@@ -198,7 +201,8 @@ namespace BTitlesLocalizationPatch.Scan
             List<(string DictKey, ModBiome Biome)> scannedBiomes,
             Mod mod,
             ref int added,
-            ref int updated
+            ref int updated,
+            ref int pendingColor
         )
         {
             string namespacedKey = $"{targetMod.Name}.{modBiome.Name}";
@@ -226,8 +230,11 @@ namespace BTitlesLocalizationPatch.Scan
                 biomeDict[namespacedKey] = newEntry;
                 scannedBiomes.Add((namespacedKey, modBiome));
                 added++;
+                if (newEntry.TitleColor == default)
+                    pendingColor++;
+                string pendingColorSuffix = newEntry.TitleColor == default ? Localize("DefaultColorMarker") : "";
                 mod.Logger.Info(
-                    SafeFormat(Localize("NewBiome"), modBiome.Name, modBiome.DisplayName.Value)
+                    SafeFormat(Localize("NewBiome"), modBiome.Name, modBiome.DisplayName.Value, pendingColorSuffix)
                 );
             }
         }
@@ -384,6 +391,7 @@ namespace BTitlesLocalizationPatch.Scan
             int Added,
             int Updated,
             int Skipped,
+            int PendingColor,
             List<(Mod Mod, ModBiome Biome)> AllBiomes,
             Dictionary<string, string> KeyMapping
         );

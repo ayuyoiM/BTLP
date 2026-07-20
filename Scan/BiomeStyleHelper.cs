@@ -29,13 +29,7 @@ namespace BTitlesLocalizationPatch.Scan
                 return;
             }
 
-            // 没返回色时日志提示，留 default 让 BiomeNameHook 在主线程图标采样补色
-            Diagnostics.DebugLog.Info(
-                Language.GetTextValue(
-                    $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.NoBiomeColor",
-                    biome.FullName
-                )
-            );
+            // 留 default 让 BiomeNameHook 在主线程图标采样补色
             titleColor = default;
         }
 
