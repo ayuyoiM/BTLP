@@ -151,6 +151,12 @@ namespace BTitlesLocalizationPatch
             {
                 if (scope == "Terraria")
                     return (localized, "BTitles");
+
+                // 非拉丁文字语言下值如果是纯 ASCII，说明模组没提供当前语言的翻译（英文回退）
+                // 跳过此步，让后续翻译链继续查找前置模组或 BTitles 的翻译
+                if (IsNonLatinLanguage() && IsPureAscii(localized))
+                    return (null, null);
+
                 return (localized, "ModLocalization");
             }
             return (null, null);
@@ -251,6 +257,28 @@ namespace BTitlesLocalizationPatch
                     return value;
             }
             return null;
+        }
+
+        // 判断当前语言是否为非拉丁文字语言
+        // 目前覆盖：中文、日文、韩文、俄文
+        private static bool IsNonLatinLanguage()
+        {
+            string name = Language.ActiveCulture.Name;
+            return name.StartsWith("zh-")
+                || name.StartsWith("ja")
+                || name.StartsWith("ko")
+                || name.StartsWith("ru");
+        }
+
+        // 判断字符串是否全部由 ASCII 字符组成（<= 127）
+        private static bool IsPureAscii(string value)
+        {
+            foreach (char c in value)
+            {
+                if (c > 127)
+                    return false;
+            }
+            return true;
         }
     }
 }
