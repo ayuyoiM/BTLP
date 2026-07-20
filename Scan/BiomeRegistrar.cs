@@ -46,7 +46,10 @@ namespace BTitlesLocalizationPatch.Scan
             if (scanResult == null)
                 return;
 
-            RegisteredCheckFunc = BuildDetectionFunction(scanResult.AllBiomes, scanResult.KeyMapping);
+            RegisteredCheckFunc = BuildDetectionFunction(
+                scanResult.AllBiomes,
+                scanResult.KeyMapping
+            );
             checkFuncs.Insert(0, RegisteredCheckFunc);
             ScannedBiomes = biomes;
 
@@ -246,10 +249,7 @@ namespace BTitlesLocalizationPatch.Scan
 
             if (enableStyling)
             {
-                BiomeStyleHelper.GetTitleColors(
-                    modBiome,
-                    out Color titleColor
-                );
+                BiomeStyleHelper.GetTitleColors(modBiome, out Color titleColor);
                 entry.TitleColor = titleColor;
             }
             else
@@ -284,7 +284,12 @@ namespace BTitlesLocalizationPatch.Scan
                     catch (Exception ex)
                     {
                         DebugLog.Warn(
-                            SafeFormat(Localize("DetectionEx"), sourceMod.Name, biome.Name, ex.Message)
+                            SafeFormat(
+                                Localize("DetectionEx"),
+                                sourceMod.Name,
+                                biome.Name,
+                                ex.Message
+                            )
                         );
                     }
                 }

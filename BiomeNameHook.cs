@@ -1,12 +1,11 @@
 #nullable enable
-using BTitles;
-using BTitlesLocalizationPatch.Scan;
-using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using BTitles;
+using BTitlesLocalizationPatch.Scan;
 using Terraria.Localization;
 
 namespace BTitlesLocalizationPatch
@@ -53,7 +52,8 @@ namespace BTitlesLocalizationPatch
             // 缓存命中：从基础翻译查自定义覆盖
             if (hasValidKey && TranslationCache.TryGetValue(cacheKey, out var cachedEntry))
             {
-                string displayName = ApplyCustomOverride(cachedEntry.Text, config) ?? cachedEntry.Text;
+                string displayName =
+                    ApplyCustomOverride(cachedEntry.Text, config) ?? cachedEntry.Text;
                 string sourceTag = displayName == cachedEntry.Text ? cachedEntry.Tag : "CustomName";
                 LogBiomeEntry(biomeEntry.Key ?? "", displayName, biomeEntry, sourceTag);
                 return displayName;

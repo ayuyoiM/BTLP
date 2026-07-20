@@ -14,10 +14,7 @@ namespace BTitlesLocalizationPatch.Scan
     internal static class BiomeStyleHelper
     {
         // 取色链：群系返回色 → 图标主色（最多色）→ 白色回退
-        public static void GetTitleColors(
-            ModBiome? biome,
-            out Color titleColor
-        )
+        public static void GetTitleColors(ModBiome? biome, out Color titleColor)
         {
             if (biome == null)
             {
@@ -95,7 +92,13 @@ namespace BTitlesLocalizationPatch.Scan
             Color[] pixels = new Color[sampleWidth * sampleHeight];
             try
             {
-                icon.GetData(0, new Rectangle(0, 0, sampleWidth, sampleHeight), pixels, 0, pixels.Length);
+                icon.GetData(
+                    0,
+                    new Rectangle(0, 0, sampleWidth, sampleHeight),
+                    pixels,
+                    0,
+                    pixels.Length
+                );
             }
             catch
             {
@@ -108,9 +111,11 @@ namespace BTitlesLocalizationPatch.Scan
 
             foreach (ref Color pixel in pixels.AsSpan())
             {
-                if (pixel.A < 128) continue;
+                if (pixel.A < 128)
+                    continue;
                 int brightness = pixel.R + pixel.G + pixel.B;
-                if (brightness < 30 || brightness > 720) continue;
+                if (brightness < 30 || brightness > 720)
+                    continue;
 
                 int colorKey = (pixel.R >> 3) << 10 | (pixel.G >> 3) << 5 | (pixel.B >> 3);
                 colorFrequency.TryGetValue(colorKey, out int currentCount);
@@ -123,7 +128,8 @@ namespace BTitlesLocalizationPatch.Scan
                     mostCommonColor = new Color(
                         (byte)(((colorKey >> 10) & 0x1F) << 3 | 4),
                         (byte)(((colorKey >> 5) & 0x1F) << 3 | 4),
-                        (byte)((colorKey & 0x1F) << 3 | 4));
+                        (byte)((colorKey & 0x1F) << 3 | 4)
+                    );
                 }
             }
 

@@ -193,16 +193,17 @@ namespace BTitlesLocalizationPatch
             if (!HookInstalled)
                 return;
 
-            if (Scan.BiomeRegistrar.ScannedBiomes == null || Scan.BiomeRegistrar.ScannedBiomes.Count == 0)
+            if (
+                Scan.BiomeRegistrar.ScannedBiomes == null
+                || Scan.BiomeRegistrar.ScannedBiomes.Count == 0
+            )
                 return;
 
             var instance = InstanceField?.GetValue(null);
             if (instance == null)
                 return;
 
-            var biomeDict =
-                BiomeDictField?.GetValue(instance)
-                as Dictionary<string, BiomeEntry>;
+            var biomeDict = BiomeDictField?.GetValue(instance) as Dictionary<string, BiomeEntry>;
             if (biomeDict == null)
                 return;
 
@@ -225,10 +226,7 @@ namespace BTitlesLocalizationPatch
 
                 if (enabled)
                 {
-                    Scan.BiomeStyleHelper.GetTitleColors(
-                        modBiome,
-                        out Color titleColor
-                    );
+                    Scan.BiomeStyleHelper.GetTitleColors(modBiome, out Color titleColor);
                     entry.TitleColor = titleColor;
                 }
                 else
@@ -282,49 +280,50 @@ namespace BTitlesLocalizationPatch
                     )
                 );
 
-                    // 运行时扫描热卸载：从 BTitles 字典移除本次扫描新增的条目，清理检测函数
-                    if (Scan.BiomeRegistrar.ScannedBiomes == null || Scan.BiomeRegistrar.ScannedBiomes.Count == 0)
-                    {
-                        Scan.BiomeRegistrar.Cleanup();
-                        return;
-                    }
-
-                    var instance = InstanceField?.GetValue(null);
-                    if (instance == null)
-                        return;
-
-                    var biomeDict =
-                        BiomeDictField?.GetValue(instance)
-                        as Dictionary<string, BiomeEntry>;
-                    if (biomeDict == null)
-                        return;
-
-                    // 移除本次扫描新增的字典条目（快照中不存在的键）
-                    if (Scan.BiomeRegistrar.PreScanKeys != null)
-                    {
-                        int removed = 0;
-                        foreach (var (dictKey, _) in Scan.BiomeRegistrar.ScannedBiomes)
-                        {
-                            if (
-                                dictKey != null
-                                && !Scan.BiomeRegistrar.PreScanKeys.Contains(dictKey)
-                                && biomeDict.Remove(dictKey)
-                            )
-                                removed++;
-                        }
-                        if (removed > 0)
-                            mod.Logger.Info(
-                                Language.GetTextValue(
-                                    $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.UnregisteredBiomes",
-                                    removed
-                                )
-                            );
-                    }
-
+                // 运行时扫描热卸载：从 BTitles 字典移除本次扫描新增的条目，清理检测函数
+                if (
+                    Scan.BiomeRegistrar.ScannedBiomes == null
+                    || Scan.BiomeRegistrar.ScannedBiomes.Count == 0
+                )
+                {
                     Scan.BiomeRegistrar.Cleanup();
-                    Scan.BiomeRegistrar.ScannedBiomes = null;
-                    Scan.BiomeRegistrar.PreScanKeys = null;
+                    return;
                 }
+
+                var instance = InstanceField?.GetValue(null);
+                if (instance == null)
+                    return;
+
+                var biomeDict =
+                    BiomeDictField?.GetValue(instance) as Dictionary<string, BiomeEntry>;
+                if (biomeDict == null)
+                    return;
+
+                // 移除本次扫描新增的字典条目（快照中不存在的键）
+                if (Scan.BiomeRegistrar.PreScanKeys != null)
+                {
+                    int removed = 0;
+                    foreach (var (dictKey, _) in Scan.BiomeRegistrar.ScannedBiomes)
+                    {
+                        if (
+                            dictKey != null
+                            && !Scan.BiomeRegistrar.PreScanKeys.Contains(dictKey)
+                            && biomeDict.Remove(dictKey)
+                        )
+                            removed++;
+                    }
+                    if (removed > 0)
+                        mod.Logger.Info(
+                            Language.GetTextValue(
+                                $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.UnregisteredBiomes",
+                                removed
+                            )
+                        );
+                }
+
+                Scan.BiomeRegistrar.Cleanup();
+                Scan.BiomeRegistrar.ScannedBiomes = null;
+                Scan.BiomeRegistrar.PreScanKeys = null;
             }
         }
 
