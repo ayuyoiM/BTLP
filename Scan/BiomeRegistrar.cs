@@ -378,7 +378,6 @@ namespace BTitlesLocalizationPatch.Scan
             }
         }
 
-        // 清理扫描记录和快照，供 Unload 或重新扫描时使用
         internal static void ClearScannedBiomes()
         {
             ScannedBiomes = null;

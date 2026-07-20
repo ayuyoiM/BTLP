@@ -41,14 +41,12 @@ namespace BTitlesLocalizationPatch
             string cacheKey = $"{safeScope}|{sanitizedKey}";
             string currentCulture = Language.ActiveCulture.Name;
 
-            // 语言变更时清空缓存
             if (_lastCultureName != currentCulture)
             {
                 _lastCultureName = currentCulture;
                 TranslationCache.Clear();
             }
 
-            // 缓存命中：从基础翻译查自定义覆盖
             if (hasValidKey && TranslationCache.TryGetValue(cacheKey, out var cachedEntry))
             {
                 string displayName =
@@ -58,7 +56,6 @@ namespace BTitlesLocalizationPatch
                 return displayName;
             }
 
-            // 回退配色：TitleColor 透明时图标采样
             if (biomeEntry.TitleColor == default && biomeEntry.Icon != null)
             {
                 // 热重载后 GPU 资源释放，图标引用可能已失效
@@ -73,11 +70,9 @@ namespace BTitlesLocalizationPatch
                 }
             }
 
-            // 翻译回退链：先命中者胜出
             string? baseText = null;
             string? baseTag = null;
 
-            // 非英文环境才查翻译键
             bool shouldTranslate = hasValidKey && currentCulture != "en-US";
 
             // 1. 源模组本地化
@@ -267,7 +262,6 @@ namespace BTitlesLocalizationPatch
             return null;
         }
 
-        // 判断当前语言是否为非拉丁文字语言
         // 目前覆盖：中文、日文、韩文、俄文
         private static bool IsNonLatinLanguage()
         {
@@ -278,7 +272,6 @@ namespace BTitlesLocalizationPatch
                 || name.StartsWith("ru");
         }
 
-        // 尝试从扫描记录中重加载已释放的图标
         private static Texture2D? TryReloadIcon(string? biomeKey)
         {
             if (string.IsNullOrEmpty(biomeKey) || BiomeRegistrar.ScannedBiomes == null)
@@ -292,7 +285,6 @@ namespace BTitlesLocalizationPatch
             return null;
         }
 
-        // 判断字符串是否全部由 ASCII 字符组成（<= 127）
         private static bool IsPureAscii(string value)
         {
             for (int i = 0; i < value.Length; i++)

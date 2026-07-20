@@ -54,10 +54,7 @@ namespace BTitlesLocalizationPatch
             InstallHookWithFingerprint();
         }
 
-        /*
-        DebugLog InfoWriter/WarnWriter/ErrorWriter 对应 tModLoader Logger 级别
-        Unload 时清空防止热重载残留引用
-        */
+        // DebugLog InfoWriter/WarnWriter/ErrorWriter 对应 tModLoader Logger 级别
         private void InstallDebugLogger()
         {
             DebugLog.InfoWriter = s => Logger.Info(s!);
@@ -65,7 +62,6 @@ namespace BTitlesLocalizationPatch
             DebugLog.ErrorWriter = s => Logger.Error(s!);
         }
 
-        // 预缓存反射字段，失败时不影响功能只打 Warn
         private void CacheReflectionFields()
         {
             _instanceField = typeof(BiomeTitlesMod).GetField(
@@ -228,7 +224,6 @@ namespace BTitlesLocalizationPatch
                 if (!biomeDict.TryGetValue(dictKey, out var entry))
                     continue;
 
-                // 扫描记录中的 modBiome 引用一般不会 null，但防御留一手
                 if (modBiome == null)
                     continue;
 
@@ -347,7 +342,6 @@ namespace BTitlesLocalizationPatch
 
         public override void Unload()
         {
-            // 清理翻译缓存
             BiomeNameHook.TranslationCache.Clear();
 
             // 单独 try-catch 包裹 Dispose，防止它抛异常阻断后续清理
@@ -366,7 +360,6 @@ namespace BTitlesLocalizationPatch
             _checkFuncsField = null;
             _loaded = false;
 
-            // 从 BTitles 检测函数列表移除本模组注册的 lambda
             Scan.BiomeRegistrar.Cleanup();
             // 清理扫描记录，避免热重载后残留旧引用
             Scan.BiomeRegistrar.ClearScannedBiomes();

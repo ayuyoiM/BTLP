@@ -17,7 +17,6 @@ namespace BTitlesLocalizationPatch.Diagnostics
         private static long _lastConfigCheckTicks;
         private static readonly long ConfigCheckCooldownTicks = TimeSpan.FromSeconds(3).Ticks;
 
-        // 重置缓存（Unload 时调用），防止热重载后残留旧值
         internal static void ResetCache()
         {
             _cachedEnabled = false;
@@ -47,12 +46,10 @@ namespace BTitlesLocalizationPatch.Diagnostics
             }
         }
 
-        // 三个级别的日志写入器，由 Mod 主类在 Load 时注入对应的 Logger 方法
         public static Action<string> InfoWriter { get; set; } = s => { };
         public static Action<string> WarnWriter { get; set; } = s => { };
         public static Action<string> ErrorWriter { get; set; } = s => { };
 
-        // 输出调试日志
         public static void Info(string message)
         {
             if (Enabled)
