@@ -254,7 +254,7 @@ namespace BTitlesLocalizationPatch.Scan
             }
             else
             {
-                entry.TitleColor = Color.White;
+                entry.TitleColor = default;
             }
 
             return entry;

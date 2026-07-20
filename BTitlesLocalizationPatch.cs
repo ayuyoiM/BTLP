@@ -15,9 +15,9 @@ namespace BTitlesLocalizationPatch
 {
     /*
     BTitles 本地化增强补丁
-    1. 用 ModBiome.DisplayName 覆盖已注册群系的标题
-    2. 自动发现各模组未收录的 ModBiome 并注册到 BTitles
-    3. 增强 GetActualTitleName：源模组本地化、补丁补充翻译
+    1. 自动注册未收录群系 — 扫描各模组 ModBiome 并补入 BTitles 字典
+    2. GetActualTitleName 增强 — 5 步回退链（源模组本地化→BTitles→补丁补充→自定义→原始标题）
+    3. 自动配色 — 扫描时取 BackgroundColor，运行时 Hook 图标采样补色
     */
     public class BTitlesLocalizationPatch : Mod
     {
@@ -231,7 +231,7 @@ namespace BTitlesLocalizationPatch
                 }
                 else
                 {
-                    entry.TitleColor = Color.White;
+                    entry.TitleColor = default;
                 }
                 styledCount++;
             }

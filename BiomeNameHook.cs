@@ -12,7 +12,7 @@ namespace BTitlesLocalizationPatch
 {
     internal static class BiomeNameHook
     {
-        // 只缓存不受 BTitles 配置影响的翻译链结果（步骤 1-3/5）
+        // 只缓存不受 BTitles 配置影响的翻译链结果（步骤 1-3）
         // 自定义覆盖（步骤 4）每次重新查配置，保证配置变更即时生效
         internal static readonly ConcurrentDictionary<
             string,

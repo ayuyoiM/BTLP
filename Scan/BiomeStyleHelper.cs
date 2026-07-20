@@ -10,10 +10,11 @@ using Terraria.ModLoader;
 
 namespace BTitlesLocalizationPatch.Scan
 {
-    /* 自动配色辅助方法 */
+    /* 配色与图标工具：BackgroundColor 读取、图标加载、主色采样 */
     internal static class BiomeStyleHelper
     {
-        // 取色链：群系返回色 → 图标主色（最多色）→ 白色回退
+        // 取色链：群系返回色（BackgroundColor）→ default 让 Hook 补色
+        // 图标采样由 BiomeNameHook（主线程）执行，后台线程不可调用 GetData
         public static void GetTitleColors(ModBiome? biome, out Color titleColor)
         {
             if (biome == null)
@@ -28,23 +29,13 @@ namespace BTitlesLocalizationPatch.Scan
                 return;
             }
 
-            // 尝试图标采样（取出现最多的颜色）
-            Texture2D? icon = TryLoadIcon(biome);
-            if (icon != null)
-            {
-                titleColor = SampleDominantColor(icon);
-                return;
-            }
-
-            // 没返回色也没图标时日志提示
-            // 后台线程（PostSetupContent）不设颜色，Hook 会在主线程补色
+            // 没返回色时日志提示，留 default 让 BiomeNameHook 在主线程图标采样补色
             Diagnostics.DebugLog.Info(
                 Language.GetTextValue(
                     $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.NoBiomeColor",
                     biome.FullName
                 )
             );
-            // 留 default 让 BiomeNameHook 在主线程图标采样补色
             titleColor = default;
         }
 
