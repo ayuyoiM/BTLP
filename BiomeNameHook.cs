@@ -151,10 +151,7 @@ namespace BTitlesLocalizationPatch
             {
                 if (scope == "Terraria")
                     return (localized, "BTitles");
-
-                string? englishValue = GetEnglishTranslation(localizationKey);
-                if (englishValue != null && englishValue != localized)
-                    return (localized, "ModLocalization");
+                return (localized, "ModLocalization");
             }
             return (null, null);
         }
@@ -252,39 +249,6 @@ namespace BTitlesLocalizationPatch
                 string value = Language.GetTextValue(locKey);
                 if (!string.IsNullOrEmpty(value))
                     return value;
-            }
-            return null;
-        }
-
-        // 反射访问 LocalizedText._translations，取英文值对比判断是否有真实翻译
-        private static string? GetEnglishTranslation(string locKey)
-        {
-            var localizedText = LanguageManager.Instance.GetText(locKey);
-            if (localizedText == null)
-                return null;
-
-            try
-            {
-                var field = typeof(LocalizedText).GetField(
-                    "_translations",
-                    BindingFlags.Instance | BindingFlags.NonPublic
-                );
-                if (
-                    field?.GetValue(localizedText) is Dictionary<string, string> translations
-                    && translations.TryGetValue("en-US", out var englishValue)
-                    && !string.IsNullOrEmpty(englishValue)
-                )
-                    return englishValue;
-            }
-            catch (Exception ex)
-            {
-                Diagnostics.DebugLog.Warn(
-                    Language.GetTextValue(
-                        $"Mods.{nameof(BTitlesLocalizationPatch)}.Logs.GetEnglishTranslationFailed",
-                        locKey,
-                        ex.Message
-                    )
-                );
             }
             return null;
         }
