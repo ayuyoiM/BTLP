@@ -12,7 +12,7 @@ Logs: {
 	DetectionEx: Exception detecting {0}.{1}: {2}
 	DictNull: BiomeDictionary is null
 	DictStats: Dictionary has {0} entries, {1} check functions
-	NoBiomeColor: Biome [{0}] has no biome color, using white default
+	NoBiomeColor: Biome [{0}] has no biome color, leaving default for Hook deferred coloring
 	BiomeColor: RGB({0},{1},{2})
 	IconLoadFailed: Failed to load icon for biome [{0}]: {1}
 	InstanceNull: Instance is null

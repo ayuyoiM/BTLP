@@ -18,7 +18,7 @@ namespace BTitlesLocalizationPatch.Scan
         {
             if (biome == null)
             {
-                titleColor = Color.White;
+                titleColor = default;
                 return;
             }
 
@@ -84,7 +84,7 @@ namespace BTitlesLocalizationPatch.Scan
         public static Color SampleDominantColor(Texture2D icon)
         {
             if (icon == null || icon.IsDisposed || icon.Width <= 1 || icon.Height <= 1)
-                return Color.White;
+                return default;
 
             int sampleWidth = Math.Min(icon.Width, 256);
             int sampleHeight = Math.Min(icon.Height, 256);
@@ -110,7 +110,7 @@ namespace BTitlesLocalizationPatch.Scan
                         ex.Message
                     )
                 );
-                return Color.White;
+                return default;
             }
 
             var colorFrequency = new Dictionary<int, int>();
